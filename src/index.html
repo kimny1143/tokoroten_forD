@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tokoroten Audio Processor</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Tokoroten Audio Processor</h1>
+        <div class="header-icons">
+            <button id="settings-btn" class="icon-btn">⚙️</button>
+            <button id="theme-toggle" class="icon-btn">🌓</button>
+        </div>
+    </header>
+    <main>
+        <h2>AudioSep & FolderMNG</h2>
+        <div class="input-group">
+            <input type="text" id="input-dir" placeholder="Select Input Directory" readonly>
+            <button id="select-input-dir">Select</button>
+        </div>
+        <div class="input-group">
+            <input type="text" id="output-dir" placeholder="Select Output Directory" readonly>
+            <button id="select-output-dir">Select</button>
+        </div>
+        <div class="input-group">
+            <input type="text" id="target-dir" placeholder="Select Target Base Directory" readonly>
+            <button id="select-target-dir">Select</button>
+        </div>
+        <div class="checkbox-group">
+            <label><input type="checkbox" id="vocals"> Vocals</label>
+            <label><input type="checkbox" id="drums"> Drums</label>
+            <label><input type="checkbox" id="bass"> Bass</label>
+            <label><input type="checkbox" id="other"> Other</label>
+        </div>
+        <button id="run" class="primary-btn">Run</button>
+        <div id="output" class="output-area">
+            <p>Results will be displayed here...</p>
+        </div>
+    </main>
+    <script src="renderer.js"></script>
+</body>
+</html>
