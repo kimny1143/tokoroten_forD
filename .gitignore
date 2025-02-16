@@ -60,3 +60,8 @@ ENV/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Large library files
+*.dylib
+resources/api/_internal/
+resources/api/api
