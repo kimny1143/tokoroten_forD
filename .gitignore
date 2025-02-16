@@ -4,6 +4,7 @@
 # production
 /build
 /dist
+/resources
 
 # misc
 .DS_Store
@@ -20,6 +21,14 @@ yarn-error.log*
 __pycache__/
 *.py[cod]
 *$py.class
+*.spec
+*.pyc
+.Python
+.env
+.venv
+env/
+venv/
+ENV/
 
 # Electron-builder
 /dist_electron
@@ -27,5 +36,17 @@ __pycache__/
 # 開発用文書
 /dev_docs
 
-#libs
+# libs
 /libs
+
+# test files
+/test_files
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
