@@ -22,4 +22,11 @@ __pycache__/
 *$py.class
 
 # Electron-builder
+<<<<<<< HEAD
 /dist_electron
+=======
+/dist_electron
+
+# .md_bakファイル
+*.md_bak
+>>>>>>> 0d90a3951b6334679a6686048431ccdc8ff0ca4e
