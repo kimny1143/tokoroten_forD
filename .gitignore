@@ -4,7 +4,9 @@
 # production
 /build
 /dist
+/dist_electron
 /resources
+/resources/**
 
 # misc
 .DS_Store
@@ -29,9 +31,6 @@ __pycache__/
 env/
 venv/
 ENV/
-
-# Electron-builder
-/dist_electron
 
 # 開発用文書
 /dev_docs
