@@ -181,6 +181,53 @@ class PDFToMarkdownConverter:
             pdf_path (str): 入力PDFファイルのパス
             output_path (str): 出力Markdownファイルのパス
         """
-        text = self.extract_text_from_pdf(pdf_path)
-        markdown_text = self.convert_text_to_markdown(text)
-        self.save_markdown(markdown_text, output_path) 
+        try:
+            start_time = time.time()
+            
+            # PDFからテキストを抽出
+            text = self.extract_text_from_pdf(pdf_path)
+            text_time = time.time()
+            print(f"PDF text extraction completed in {text_time - start_time:.2f} seconds")
+            
+            # Markdownに変換
+            print("===MARKDOWN_START===")
+            markdown_text = self.convert_text_to_markdown(text)
+            print(markdown_text)
+            print("===MARKDOWN_END===")
+            markdown_time = time.time()
+            print(f"Markdown conversion completed in {markdown_time - text_time:.2f} seconds")
+            
+            # ファイルに保存
+            self.save_markdown(markdown_text, output_path)
+            save_time = time.time()
+            print(f"File saved in {save_time - markdown_time:.2f} seconds")
+            print(f"Total processing time: {save_time - start_time:.2f} seconds")
+            
+        except Exception as e:
+            logger.error(f"Error in PDF to Markdown conversion: {str(e)}")
+            print(f"Error: {str(e)}")
+            raise
+
+if __name__ == "__main__":
+    import sys
+    
+    if len(sys.argv) != 3:
+        print("Usage: python pdf_markdown.py <pdf_path> <output_path>")
+        sys.exit(1)
+    
+    try:
+        # 標準出力をUTF-8に設定
+        import codecs
+        sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer)
+        sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer)
+        
+        pdf_path = sys.argv[1]
+        output_path = sys.argv[2]
+        
+        converter = PDFToMarkdownConverter()
+        converter.convert_pdf_to_markdown(pdf_path, output_path)
+        sys.exit(0)
+        
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        sys.exit(1) 

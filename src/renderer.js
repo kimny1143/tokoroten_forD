@@ -1,7 +1,26 @@
 let inputDir = '';
 let outputDir = '';
 let targetBaseDir = '';
+let pdfFile = '';
+let apiKey = '';
 
+// タブ切り替え機能
+document.querySelectorAll('.tab-btn').forEach(button => {
+    button.addEventListener('click', () => {
+        // アクティブなタブを更新
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+        
+        // タブコンテンツを切り替え
+        const targetId = button.getAttribute('data-tab');
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        document.getElementById(targetId).classList.add('active');
+    });
+});
+
+// 音声処理関連のイベントリスナー
 document.getElementById('select-input-dir').addEventListener('click', async () => {
     const result = await window.electronAPI.openDirectory();
     if (result) {
@@ -26,7 +45,7 @@ document.getElementById('select-target-dir').addEventListener('click', async () 
     }
 });
 
-document.getElementById('run').addEventListener('click', async () => {
+document.getElementById('run-audio').addEventListener('click', async () => {
     if (!inputDir || !outputDir || !targetBaseDir) {
         alert('Please select all directories first');
         return;
@@ -42,7 +61,7 @@ document.getElementById('run').addEventListener('click', async () => {
     }
 
     const enableRenameMove = document.getElementById('enable-rename-move').checked;
-    document.getElementById('output').innerHTML = '<p>Processing...</p>';
+    document.getElementById('audio-output').innerHTML = '<p>処理中...</p>';
 
     try {
         const result = await window.electronAPI.processAudio({ 
@@ -53,19 +72,39 @@ document.getElementById('run').addEventListener('click', async () => {
             enableRenameMove
         });
 
+        if (!result.result.success) {
+            // エラーの場合
+            let errorHtml = `
+                <h3>エラーが発生しました</h3>
+                <p>エラー内容: ${result.result.error}</p>
+                <p>入力ディレクトリ: ${result.result.input_directory}</p>
+                <p>出力ディレクトリ: ${result.result.output_directory}</p>
+            `;
+            document.getElementById('audio-output').innerHTML = errorHtml;
+            return;
+        }
+
+        // 成功の場合
         let resultHtml = `
             <h3>処理完了</h3>
             <p>入力ディレクトリ: ${result.result.input_directory}</p>
             <p>出力ディレクトリ: ${result.result.output_directory}</p>
-            <h4>処理されたファイル:</h4>
-            <ul>
-                ${result.result.processed_files.map(file => 
-                    `<li>${file.file} → ${file.output}</li>`
-                ).join('')}
-            </ul>
         `;
 
-        if (enableRenameMove && result.result.moved_files) {
+        if (result.result.processed_files && result.result.processed_files.length > 0) {
+            resultHtml += `
+                <h4>処理されたファイル:</h4>
+                <ul>
+                    ${result.result.processed_files.map(file => 
+                        `<li>${file.file} → ${file.output}</li>`
+                    ).join('')}
+                </ul>
+            `;
+        } else {
+            resultHtml += '<p>処理されたファイルはありません</p>';
+        }
+
+        if (enableRenameMove && result.result.moved_files && result.result.moved_files.length > 0) {
             resultHtml += `
                 <h4>移動されたファイル:</h4>
                 <ul>
@@ -76,14 +115,96 @@ document.getElementById('run').addEventListener('click', async () => {
             `;
         }
 
-        document.getElementById('output').innerHTML = resultHtml;
+        document.getElementById('audio-output').innerHTML = resultHtml;
     } catch (error) {
         console.error('Processing error:', error);
-        document.getElementById('output').innerHTML = `<p>Error: ${error.message}</p>`;
+        document.getElementById('audio-output').innerHTML = `
+            <h3>エラーが発生しました</h3>
+            <p>エラー内容: ${error.message}</p>
+        `;
     }
 });
 
-// Theme toggle functionality
+// PDF/CSV変換関連のイベントリスナー
+document.getElementById('select-pdf-file').addEventListener('click', async () => {
+    const result = await window.electronAPI.openPDFFile();
+    if (result) {
+        pdfFile = result;
+        document.getElementById('pdf-file').value = pdfFile;
+        // PDFファイルが選択されたらMarkdown変換ボタンを有効化
+        document.getElementById('convert-to-markdown').disabled = false;
+    }
+});
+
+document.getElementById('save-api-key').addEventListener('click', async () => {
+    const inputKey = document.getElementById('api-key').value.trim();
+    if (inputKey) {
+        try {
+            await window.electronAPI.saveAPIKey(inputKey);
+            apiKey = inputKey;
+            alert('APIキーを保存しました');
+        } catch (error) {
+            console.error('API key save error:', error);
+            alert('APIキーの保存に失敗しました');
+        }
+    }
+});
+
+document.getElementById('convert-to-markdown').addEventListener('click', async () => {
+    if (!pdfFile) {
+        alert('PDFファイルを選択してください');
+        return;
+    }
+
+    const outputArea = document.getElementById('conversion-output');
+    const previewContent = document.querySelector('.preview-content');
+    outputArea.innerHTML = '<p>変換中...</p>';
+    
+    try {
+        const result = await window.electronAPI.convertPDFToMarkdown({
+            pdfPath: pdfFile,
+            apiKey: apiKey
+        });
+
+        if (result.success) {
+            // プレビューエリアにMarkdownを表示
+            previewContent.textContent = result.markdown;
+            outputArea.innerHTML = '<p>変換が完了しました</p>';
+            // Markdown→CSVボタンを有効化
+            document.getElementById('convert-to-csv').disabled = false;
+        } else {
+            outputArea.innerHTML = `<p>Error: ${result.error}</p>`;
+        }
+    } catch (error) {
+        console.error('Conversion error:', error);
+        outputArea.innerHTML = `<p>Error: ${error.message}</p>`;
+    }
+});
+
+document.getElementById('convert-to-csv').addEventListener('click', async () => {
+    const outputArea = document.getElementById('conversion-output');
+    outputArea.innerHTML = '<p>CSV変換中...</p>';
+    
+    try {
+        const result = await window.electronAPI.convertMarkdownToCSV({
+            markdownPath: pdfFile.replace('.pdf', '.md')
+        });
+
+        if (result.success) {
+            outputArea.innerHTML = `
+                <p>CSV変換が完了しました</p>
+                <p>出力ファイル: ${result.csvPath}</p>
+            `;
+        } else {
+            outputArea.innerHTML = `<p>Error: ${result.error}</p>`;
+        }
+    } catch (error) {
+        console.error('CSV conversion error:', error);
+        outputArea.innerHTML = `<p>Error: ${error.message}</p>`;
+    }
+});
+
+// テーマ切り替え機能
 let isDarkMode = false;
 document.getElementById('theme-toggle').addEventListener('click', () => {
     isDarkMode = !isDarkMode;

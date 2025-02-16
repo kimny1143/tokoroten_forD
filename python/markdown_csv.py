@@ -193,4 +193,43 @@ class MarkdownToCSVConverter:
             
         except Exception as e:
             logger.error(f"Markdown→CSV変換中にエラーが発生: {str(e)}")
-            raise 
+            raise
+
+if __name__ == "__main__":
+    import sys
+    
+    if len(sys.argv) != 3:
+        print("Usage: python markdown_csv.py <markdown_path> <output_path>")
+        sys.exit(1)
+    
+    try:
+        markdown_path = sys.argv[1]
+        output_path = sys.argv[2]
+        
+        # 出力ディレクトリとベース名を取得
+        output_dir = os.path.dirname(output_path)
+        base_name = os.path.splitext(os.path.basename(output_path))[0]
+        
+        converter = MarkdownToCSVConverter()
+        
+        # Markdownファイルを読み込み
+        with open(markdown_path, 'r', encoding='utf-8') as f:
+            markdown_text = f.read()
+        
+        # テーブルを抽出してDataFrameに変換
+        dataframes = converter._extract_tables_from_markdown(markdown_text)
+        
+        if not dataframes:
+            print("テーブルが見つかりませんでした")
+            sys.exit(1)
+        
+        # 最初のテーブルをCSVとして保存
+        df = dataframes[0]
+        os.makedirs(output_dir, exist_ok=True)
+        df.to_csv(output_path, index=False, encoding='utf-8-sig')
+        print(f"CSVファイルを保存しました: {output_path}")
+        sys.exit(0)
+        
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        sys.exit(1) 
