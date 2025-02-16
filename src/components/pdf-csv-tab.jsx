@@ -31,10 +31,16 @@ export const PdfCsvTab = () => {
       setIsLoading(true);
       setError(null);
       const result = await window.electronAPI.convertPdfToMarkdown(selectedFile);
-      if (result.success) {
-        setPreviewText(result.markdown);
+      console.log('PDF to Markdown result:', {
+        success: result.success,
+        hasMarkdownText: !!result.markdown_text,
+        markdownTextLength: result.markdown_text?.length,
+        sample: result.markdown_text?.substring(0, 100) + '...'
+      });
+      if (result.success && result.markdown_text) {
+        setPreviewText(result.markdown_text);
       } else {
-        setError(result.error || 'PDF変換中にエラーが発生しました');
+        setError(result.error || 'PDF変換中にエラーが発生しました。Markdownテキストが生成されませんでした。');
       }
     } catch (error) {
       console.error('PDF→Markdown変換エラー:', error);
@@ -45,15 +51,33 @@ export const PdfCsvTab = () => {
   };
 
   const handleMarkdownToCsv = async () => {
-    if (!previewText) return;
+    if (!previewText || !selectedFile) return;
     try {
       setIsLoading(true);
       setError(null);
-      const result = await window.electronAPI.convertMarkdownToCsv({
-        markdownContent: previewText
+      
+      // デバッグ用のログ出力を追加
+      console.log('Converting to CSV with markdown:', {
+        type: typeof previewText,
+        length: previewText.length,
+        sample: previewText.substring(0, 100)
       });
+
+      const result = await window.electronAPI.convertMarkdownToCsv({
+        markdownContent: previewText,
+        outputDir: selectedFile ? require('path').dirname(selectedFile) : null
+      });
+
+      console.log('CSV conversion result:', result);
+      
       if (!result.success) {
         setError(result.error || 'CSV変換中にエラーが発生しました');
+      } else if (result.csvPaths && result.csvPaths.length > 0) {
+        console.log('CSV files created:', result.csvPaths);
+        setError(null);
+        alert(result.message || `CSVファイルが生成されました: ${result.outputDir}`);
+      } else {
+        setError('CSVファイルが生成されませんでした');
       }
     } catch (error) {
       console.error('Markdown→CSV変換エラー:', error);
@@ -100,9 +124,9 @@ export const PdfCsvTab = () => {
           </button>
           <button
             onClick={handleMarkdownToCsv}
-            disabled={!previewText || isLoading}
+            disabled={!previewText || !selectedFile || isLoading}
             className={`px-4 py-2 rounded-lg transition-colors ${
-              !previewText || isLoading
+              !previewText || !selectedFile || isLoading
                 ? 'bg-slate-600 text-slate-300 cursor-not-allowed'
                 : 'bg-blue-600 text-white hover:bg-blue-500'
             }`}

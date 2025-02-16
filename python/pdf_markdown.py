@@ -14,13 +14,13 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class PDFToMarkdownConverter:
-    def __init__(self, api_key: Optional[str] = None, timeout: int = 30, max_retries: int = 3):
+    def __init__(self, api_key: Optional[str] = None, timeout: int = 60, max_retries: int = 3):
         """
         PDFToMarkdownConverterクラスのコンストラクタ
         
         Args:
             api_key (Optional[str]): Anthropic APIキー。Noneの場合は環境変数から取得
-            timeout (int): APIリクエストのタイムアウト時間（秒）
+            timeout (int): 各APIリクエストのタイムアウト時間（秒）
             max_retries (int): 最大リトライ回数
         """
         self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
@@ -74,6 +74,27 @@ class PDFToMarkdownConverter:
         delay = min(base_delay * (2 ** retry_count) + random.uniform(0, 1), max_delay)
         return delay
 
+    def _call_claude_with_timeout(self, messages: list, max_tokens: int = 8000) -> str:
+        """
+        タイムアウト付きでClaudeを呼び出す
+        
+        Args:
+            messages (list): メッセージのリスト
+            max_tokens (int): 最大トークン数
+            
+        Returns:
+            str: Claudeからの応答テキスト
+        """
+        start_time = time.time()
+        response = self.anthropic.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=max_tokens,
+            messages=messages
+        )
+        if time.time() - start_time > self.timeout:
+            raise TimeoutError(f"API call exceeded timeout of {self.timeout} seconds")
+        return response.content[0].text
+
     def convert_text_to_markdown(self, text: str) -> str:
         """
         テキストをMarkdown形式に変換する
@@ -92,13 +113,10 @@ class PDFToMarkdownConverter:
                 logger.info(f"Starting conversion to Markdown (attempt {retry_count + 1}/{self.max_retries})")
                 logger.info(f"Input text length: {len(text)} characters")
                 
-                start_time = time.time()
-                message = self.anthropic.messages.create(
-                    model="claude-3-5-sonnet-20241022",
-                    max_tokens=8000,
-                    messages=[{
-                        "role": "user",
-                        "content": f"""以下のテキストを表形式のMarkdownに変換してください。
+                # 全ての曲を一度に処理
+                markdown_text = self._call_claude_with_timeout([{
+                    "role": "user",
+                    "content": f"""以下のテキストを表形式のMarkdownに変換してください。
 以下の形式に従ってください：
 
 1. 最初に「# DK/PCM Recording Sheet(DAM) - [会社名]」という形式のタイトル
@@ -107,10 +125,8 @@ class PDFToMarkdownConverter:
    | No. | 発注日 | 発売日 | デジタル発売日 | Rec会社 | 楽曲名 | 歌手名 | OrgTime | DK№ | 音素材 | 備考 |
 
 重要：
-- 必ず全ての楽曲を表示してください
-- 曲数制限は不要です
+- 全ての曲を処理してください
 - 「紙面の都合」などの理由で曲を省略しないでください
-- 全ての楽曲を漏れなく表示することが最も重要です
 
 注意点：
 - 日付が無い場合は必ず「-」を使用（空白は不可）
@@ -120,21 +136,28 @@ class PDFToMarkdownConverter:
   - コーラス情報（Cho）
   - 採点関連情報（F採不可など）
   - その他の重要な情報（セリフ、Rap、詞Rなど）
-- 特記事項は以下の情報のみを記載：
-  - 収録期間
-  - 音源フォーマット
-  - 採点機能の有無
 
 テキスト:
 {text}"""
-                    }]
-                )
-                end_time = time.time()
+                }])
                 
-                if end_time - start_time > self.timeout:
-                    raise TimeoutError(f"Markdown conversion exceeded timeout of {self.timeout} seconds")
+                # 特記事項を追加
+                summary_text = self._call_claude_with_timeout([{
+                    "role": "user",
+                    "content": f"""先ほどのテキストから、以下の特記事項を抽出してください：
+- 収録期間
+- 音源フォーマット
+- 採点機能の有無
+
+箇条書きで出力してください。
+情報が無い場合は「未記載」と表示してください。
+
+テキスト:
+{text}"""
+                }], max_tokens=1000)
                 
-                markdown_text = message.content[0].text
+                markdown_text = markdown_text.rstrip() + '\n\n特記事項：\n' + summary_text
+                
                 logger.info(f"Markdown conversion completed. Output length: {len(markdown_text)} characters")
                 return markdown_text
                 

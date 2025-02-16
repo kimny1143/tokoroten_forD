@@ -38,19 +38,45 @@ def process_audio_with_management(input_dir, output_dir, target_base_dir, source
                 if os.path.isfile(os.path.join(input_dir, f)) 
                 and any(f.lower().endswith(ext) for ext in valid_extensions)]
         
+        total_files = len(files)
+        if total_files == 0:
+            return {
+                'success': False,
+                'error': '処理対象のファイルが見つかりません',
+                'input_directory': input_dir
+            }
+            
+        # 進捗状況の初期化
+        print(json.dumps({'progress': 0}))
+        
         # 音声処理用のプロセッサを初期化
         processor = AudioProcessor()
         processor.initialize_model()
         
-        for file_name in files:
+        for i, file_name in enumerate(files, 1):
             if not is_valid_filename(file_name):
                 continue
                 
+            # 進捗状況の更新
+            progress = int((i / total_files) * 100)
+            print(json.dumps({'progress': progress}))
+            sys.stdout.flush()
+            
             base_name, ext = os.path.splitext(file_name)
             new_base_name = base_name.lstrip('0') + 'X'
             source_path = os.path.join(input_dir, file_name)
             
             if ext.lower() in ['.wav', '.mp3']:
+                # 元のファイルをコピー
+                new_file_name = f"{new_base_name}{ext}"
+                output_path = os.path.join(output_dir, new_file_name)
+                shutil.copy2(source_path, output_path)
+                processed_files.append({
+                    'file': file_name,
+                    'output': new_file_name,
+                    'type': 'original_audio'
+                })
+                
                 # 音声ファイルの処理
                 logger.info(f"Processing audio file: {file_name}")
                 audio_data, sample_rate = load_audio_file(source_path)
@@ -79,7 +105,7 @@ def process_audio_with_management(input_dir, output_dir, target_base_dir, source
                     processed_files.append({
                         'file': file_name,
                         'output': output_filename,
-                        'type': 'audio'
+                        'type': 'separated_audio'
                     })
                 
                 # メモリ解放
@@ -175,11 +201,14 @@ def process_pdf_to_markdown(input_path, output_path, api_key):
     try:
         converter = PDFToMarkdownConverter(api_key=api_key)
         markdown_text = converter.convert_pdf_to_markdown(input_path, output_path)
+        # ファイルから読み込んで返す
+        with open(output_path, 'r', encoding='utf-8') as f:
+            markdown_content = f.read()
         return {
             "status": "success",
             "input_file": input_path,
             "output_file": output_path,
-            "markdown_text": markdown_text
+            "markdown_text": markdown_content  # 実際のmarkdownコンテンツを返す
         }
     except Exception as e:
         return {
@@ -191,8 +220,12 @@ def process_pdf_to_markdown(input_path, output_path, api_key):
 def process_markdown_to_csv(input_path, output_dir):
     """Markdownファイルをテーブル形式のCSVに変換する"""
     try:
-        converter = MarkdownToCSVConverter()
-        csv_paths = converter.convert_markdown_to_csv(input_path, output_dir)
+        # Markdownファイルを読み込む
+        with open(input_path, 'r', encoding='utf-8') as f:
+            markdown_text = f.read()
+            
+        converter = MarkdownToCSVConverter(output_dir=output_dir)
+        csv_paths = converter.convert_markdown_to_csv(markdown_text)
         return {
             "status": "success",
             "input_file": input_path,
@@ -212,32 +245,55 @@ def main():
         sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer)
         sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer)
         
-        # 標準入力からJSONデータを読み込む
-        input_data = json.loads(sys.stdin.read().strip())
+        # コマンドライン引数の解析
+        import argparse
+        parser = argparse.ArgumentParser(description='Tokoroten Audio Processor API')
+        parser.add_argument('--mode', choices=['audio', 'pdf-to-markdown', 'markdown-to-csv'],
+                          help='処理モード（audio/pdf-to-markdown/markdown-to-csv）')
+        parser.add_argument('--input', help='入力ファイルパス')
+        parser.add_argument('--output', help='出力ファイルパス')
+        parser.add_argument('--output-dir', help='出力ディレクトリ')
+        parser.add_argument('--api-key', help='API Key')
         
-        # 必須パラメータの存在確認
-        required_params = ['inputDir', 'outputDir', 'targetDir', 'sources']
-        if not all(param in input_data for param in required_params):
-            raise ValueError("Missing required parameters")
+        # 音声処理用の引数
+        parser.add_argument('--input-dir', help='入力ディレクトリ')
+        parser.add_argument('--target-dir', help='ターゲットディレクトリ')
+        parser.add_argument('--sources', help='処理対象のソース（JSON形式）')
+        parser.add_argument('--enable-rename-move', help='ファイルの移動を有効にする')
         
-        # パラメータの取り出しと型変換
-        input_dir = input_data['inputDir']
-        output_dir = input_data['outputDir']
-        target_dir = input_data['targetDir']
-        sources = input_data['sources']
-        enable_rename_move = str(input_data.get('enableRenameMove', 'False')).lower() == 'true'
+        args = parser.parse_args()
         
-        # 音声処理の実行
-        result = process_audio_with_management(
-            input_dir,
-            output_dir,
-            target_dir,
-            sources,
-            enable_rename_move
-        )
+        if args.mode == 'audio':
+            # 音声処理モード
+            if not all([args.input_dir, args.output_dir, args.sources]):
+                raise ValueError("音声処理には --input-dir, --output-dir, --sources が必要です")
+                
+            sources = json.loads(args.sources)
+            enable_rename_move = str(args.enable_rename_move).lower() == 'true'
+            target_dir = args.target_dir or args.output_dir
+            
+            result = process_audio_with_management(
+                args.input_dir,
+                args.output_dir,
+                target_dir,
+                sources,
+                enable_rename_move
+            )
+        elif args.mode == 'pdf-to-markdown':
+            # PDF→Markdown変換モード
+            if not all([args.input, args.output, args.api_key]):
+                raise ValueError("PDF変換には --input, --output, --api-key が必要です")
+            result = process_pdf_to_markdown(args.input, args.output, args.api_key)
+        elif args.mode == 'markdown-to-csv':
+            # Markdown→CSV変換モード
+            if not all([args.input, args.output_dir]):
+                raise ValueError("Markdown変換には --input と --output-dir が必要です")
+            result = process_markdown_to_csv(args.input, args.output_dir)
+        else:
+            raise ValueError("不明なモードが指定されました")
         
-        # 結果をJSON形式で出力（改行を含めない）
-        sys.stderr.flush()  # エラー出力をフラッシュ
+        # 結果をJSON形式で出力
+        sys.stderr.flush()
         sys.stdout.write(json.dumps(result, ensure_ascii=False))
         sys.stdout.flush()
         sys.exit(0)

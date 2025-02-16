@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 export const AudioTab = () => {
   const [inputDir, setInputDir] = useState('');
@@ -13,10 +13,29 @@ export const AudioTab = () => {
   });
   const [enableRenameMove, setEnableRenameMove] = useState(false);
 
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    try {
+      const savedSettings = await window.electronAPI.getSettings();
+      if (savedSettings.defaultInputDir) {
+        setInputDir(savedSettings.defaultInputDir);
+      }
+      if (savedSettings.defaultOutputDir) {
+        setOutputDir(savedSettings.defaultOutputDir);
+      }
+    } catch (error) {
+      console.error('設定の読み込みエラー:', error);
+    }
+  };
+
   const handleInputDirSelect = async () => {
     try {
       const result = await window.electronAPI.selectDirectory({
         title: '入力ディレクトリを選択',
+        defaultPath: inputDir
       });
       if (result) {
         setInputDir(result);
@@ -30,6 +49,7 @@ export const AudioTab = () => {
     try {
       const result = await window.electronAPI.selectDirectory({
         title: '出力ディレクトリを選択',
+        defaultPath: outputDir
       });
       if (result) {
         setOutputDir(result);
@@ -40,24 +60,46 @@ export const AudioTab = () => {
   };
 
   const handleProcessing = async () => {
-    if (!inputDir || !outputDir) return;
+    if (!inputDir || !outputDir) {
+      alert('入力ディレクトリと出力ディレクトリを指定してください');
+      return;
+    }
+
     try {
       setProcessing(true);
       setProgress(0);
 
-      await window.electronAPI.processAudio({
+      // 進捗状況更新用のイベントリスナーを設定
+      const progressHandler = (event, value) => {
+        console.log('Progress update:', value);
+        setProgress(value);
+      };
+      window.electron.on('audio-progress', progressHandler);
+
+      const result = await window.electronAPI.processAudio({
         inputDir,
         outputDir,
         options: {
           ...separationOptions,
           enableRenameMove,
-        },
-        onProgress: (value) => setProgress(value),
+        }
       });
+
+      // イベントリスナーを削除
+      window.electron.removeListener('audio-progress', progressHandler);
+
+      if (!result.success) {
+        throw new Error(result.error || '音声処理に失敗しました');
+      }
+
+      setProgress(100);
+      alert('音声処理が完了しました');
     } catch (error) {
       console.error('音声処理エラー:', error);
+      alert(`音声処理エラー: ${error.message}`);
     } finally {
       setProcessing(false);
+      setProgress(0);
     }
   };
 
