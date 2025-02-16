@@ -39,8 +39,13 @@ ENV/
 # libs
 /libs
 
-# test files
+# test files and audio files
 /test_files
+/test_files/**
+*.wav
+*.mp3
+*.aif
+*.aiff
 
 # OS generated files
 .DS_Store
