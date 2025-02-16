@@ -26,3 +26,6 @@ __pycache__/
 
 # 開発用文書
 /dev_docs
+
+#libs
+/libs
