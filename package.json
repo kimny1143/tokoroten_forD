@@ -8,11 +8,16 @@
     "dev": "electron .",
     "clean": "rm -rf build dist resources/api",
     "prepare:dirs": "mkdir -p resources",
-    "build:python": "pyinstaller api.spec",
+    "build:python:mac": "pyinstaller api.mac.spec",
+    "build:python:win": "pyinstaller api.win.spec",
     "copy:python": "cp -r dist/api resources/",
-    "build:electron": "CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac --arm64",
-    "build:mac": "npm run clean && npm run prepare:dirs && npm run build:python && npm run copy:python && npm run build:electron",
-    "build": "npm run build:mac"
+    "build:electron:arm64": "CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac --arm64",
+    "build:electron:x64": "CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac --x64",
+    "build:electron:win": "electron-builder --win --x64",
+    "build:mac:arm64": "npm run clean && npm run prepare:dirs && npm run build:python:mac && npm run copy:python && npm run build:electron:arm64",
+    "build:mac:x64": "npm run clean && npm run prepare:dirs && npm run build:python:mac && npm run copy:python && npm run build:electron:x64",
+    "build:win": "npm run clean && npm run prepare:dirs && npm run build:python:win && npm run copy:python && npm run build:electron:win",
+    "build": "npm run build:mac:arm64"
   },
   "author": "Atsushi Kimura",
   "license": "MIT",
@@ -24,7 +29,15 @@
       "target": [
         {
           "target": "dmg",
-          "arch": ["arm64"]
+          "arch": ["arm64", "x64"]
+        }
+      ]
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
         }
       ]
     },
