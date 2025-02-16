@@ -23,3 +23,6 @@ __pycache__/
 
 # Electron-builder
 /dist_electron
+
+# 開発用文書
+/dev_docs

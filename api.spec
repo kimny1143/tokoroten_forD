@@ -5,12 +5,23 @@ block_cipher = None
 a = Analysis(
     ['python/api.py'],
     pathex=[],
-    binaries=[],
+    binaries=[
+        ('/opt/homebrew/Cellar/llvm/18.1.8/lib/c++/libc++.1.dylib', '.'),
+    ],
     datas=[
         ('python/audio_processing.py', '.'),
-        ('python/requirements.txt', '.')
+        ('python/requirements.txt', '.'),
+        ('libs/*', 'libs')
     ],
-    hiddenimports=['torch', 'openunmix', 'librosa', 'soundfile'],
+    hiddenimports=[
+        'numpy',
+        'torch',
+        'torchaudio',
+        'librosa',
+        'soundfile',
+        'numba',
+        'scipy'
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -26,21 +37,28 @@ pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 exe = EXE(
     pyz,
     a.scripts,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
     [],
+    exclude_binaries=True,
     name='api',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    upx_exclude=[],
-    runtime_tmpdir=None,
     console=True,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+)
+
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    name='api'
 )

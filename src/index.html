@@ -28,11 +28,22 @@
             <input type="text" id="target-dir" placeholder="Select Target Base Directory" readonly>
             <button id="select-target-dir">Select</button>
         </div>
-        <div class="checkbox-group">
-            <label><input type="checkbox" id="vocals"> Vocals</label>
-            <label><input type="checkbox" id="drums"> Drums</label>
-            <label><input type="checkbox" id="bass"> Bass</label>
-            <label><input type="checkbox" id="other"> Other</label>
+        <div class="process-options">
+            <div class="audio-separation-options">
+                <h3>音源分離オプション</h3>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" id="vocals"> Vocals</label>
+                    <label><input type="checkbox" id="drums"> Drums</label>
+                    <label><input type="checkbox" id="bass"> Bass</label>
+                    <label><input type="checkbox" id="other"> Other</label>
+                </div>
+            </div>
+            <div class="file-management-options">
+                <h3>ファイル管理オプション</h3>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" id="enable-rename-move"> リネーム＆移動を有効にする</label>
+                </div>
+            </div>
         </div>
         <button id="run" class="primary-btn">Run</button>
         <div id="output" class="output-area">

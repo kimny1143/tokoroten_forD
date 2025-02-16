@@ -70,7 +70,18 @@ button {
 .checkbox-group {
     display: flex;
     gap: 1rem;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.checkbox-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.checkbox-group input[type="checkbox"] {
+    margin: 0;
 }
 
 .primary-btn {
@@ -92,4 +103,44 @@ button {
     border: 1px solid #ddd;
     border-radius: 4px;
     min-height: 200px;
+}
+
+.process-type-selector {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+}
+
+.process-type-selector label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.process-type-selector input[type="radio"] {
+    margin: 0;
+}
+
+.process-options {
+    margin-bottom: 2rem;
+}
+
+.audio-separation-options,
+.file-management-options {
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.audio-separation-options h3,
+.file-management-options h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    color: #555;
 }

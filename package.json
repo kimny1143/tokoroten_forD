@@ -5,12 +5,40 @@
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
-    "build": "npm run build:python && electron-builder",
-    "build:mac": "npm run build:python && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac --arm64",
-    "build:python": "pyinstaller --onefile --add-data \"python/audio_processing.py:.\" --add-data \"python/requirements.txt:.\" python/api.py"
+    "dev": "electron .",
+    "clean": "rm -rf build dist resources/api",
+    "prepare:dirs": "mkdir -p resources",
+    "build:python": "pyinstaller api.spec",
+    "copy:python": "cp -r dist/api resources/",
+    "build:electron": "CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac --arm64",
+    "build:mac": "npm run clean && npm run prepare:dirs && npm run build:python && npm run copy:python && npm run build:electron",
+    "build": "npm run build:mac"
   },
   "author": "Atsushi Kimura",
   "license": "MIT",
+  "build": {
+    "appId": "com.glasswerks.tokoroten-audio-processor",
+    "productName": "Tokoroten Audio Processor",
+    "mac": {
+      "category": "public.app-category.music",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["arm64"]
+        }
+      ]
+    },
+    "extraResources": [
+      {
+        "from": "resources/api",
+        "to": "api"
+      }
+    ],
+    "files": [
+      "src/**/*",
+      "package.json"
+    ]
+  },
   "devDependencies": {
     "electron": "^31.2.1",
     "electron-builder": "^24.13.3"
