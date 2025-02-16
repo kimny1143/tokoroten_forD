@@ -6,6 +6,8 @@ import re
 import numpy as np
 import traceback
 from audio_processing import process_audio_file, load_audio_file, post_process_audio
+from pdf_markdown import PDFToMarkdownConverter
+from markdown_csv import MarkdownToCSVConverter
 import torch
 import librosa
 import openunmix
@@ -132,6 +134,41 @@ class AudioProcessor:
             gc.collect()
         return estimates
 
+def process_pdf_to_markdown(input_path, output_path, api_key):
+    """PDFファイルをMarkdownに変換する"""
+    try:
+        converter = PDFToMarkdownConverter(api_key=api_key)
+        markdown_text = converter.convert_pdf_to_markdown(input_path, output_path)
+        return {
+            "status": "success",
+            "input_file": input_path,
+            "output_file": output_path,
+            "markdown_text": markdown_text
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e),
+            "input_file": input_path
+        }
+
+def process_markdown_to_csv(input_path, output_dir):
+    """Markdownファイルをテーブル形式のCSVに変換する"""
+    try:
+        converter = MarkdownToCSVConverter()
+        csv_paths = converter.convert_markdown_to_csv(input_path, output_dir)
+        return {
+            "status": "success",
+            "input_file": input_path,
+            "output_files": csv_paths
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e),
+            "input_file": input_path
+        }
+
 def main():
     """APIのメインエントリーポイント"""
     while True:
@@ -141,21 +178,45 @@ def main():
                 break
                 
             args = json.loads(command)
-            input_path = args['inputDir']
-            output_path = args['outputDir']
-            target_base_dir = args.get('targetDir', output_path)
-            enable_rename_move = args.get('enableRenameMove', False)
-            sources = args.get('sources', ['vocals', 'drums', 'bass', 'other'])
+            command_type = args.get('command', 'process_audio')
             
-            result = process_audio_with_management(
-                input_path, 
-                output_path, 
-                target_base_dir,
-                sources,
-                enable_rename_move
-            )
+            if command_type == 'process_audio':
+                input_path = args['inputDir']
+                output_path = args['outputDir']
+                target_base_dir = args.get('targetDir', output_path)
+                enable_rename_move = args.get('enableRenameMove', False)
+                sources = args.get('sources', ['vocals', 'drums', 'bass', 'other'])
+                
+                result = process_audio_with_management(
+                    input_path, 
+                    output_path, 
+                    target_base_dir,
+                    sources,
+                    enable_rename_move
+                )
+                
+            elif command_type == 'pdf_to_markdown':
+                input_path = args['inputFile']
+                output_path = args['outputFile']
+                api_key = args.get('apiKey')
+                
+                result = process_pdf_to_markdown(input_path, output_path, api_key)
+                
+            elif command_type == 'markdown_to_csv':
+                input_path = args['inputFile']
+                output_dir = args['outputDir']
+                
+                result = process_markdown_to_csv(input_path, output_dir)
+                
+            else:
+                result = {
+                    "status": "error",
+                    "message": f"Unknown command type: {command_type}"
+                }
+                
             print(json.dumps({"status": "success", "result": result}))
             sys.stdout.flush()
+            
         except EOFError:
             break
         except Exception as e:
