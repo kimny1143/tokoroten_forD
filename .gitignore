@@ -36,8 +36,14 @@ ENV/
 # 開発用文書
 /dev_docs
 
-# libs
-/libs
+# libs and dynamic libraries
+/libs/
+/libs/**
+*.dylib
+*.so
+*.dll
+*.a
+*.lib
 
 # test files and audio files
 /test_files
