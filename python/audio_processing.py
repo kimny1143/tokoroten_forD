@@ -69,3 +69,26 @@ def process_audio_file(file_path, sources, model, device, output_dir):
             sf.write(output_path, source_audio.T, sample_rate)
 
     return "Processing completed successfully"
+
+def prepare_audio(audio_path):
+    """音声データの前処理"""
+    try:
+        audio_data, sample_rate = load_audio_file(audio_path)
+        if audio_data.ndim == 1:
+            audio_data = np.stack([audio_data, audio_data], axis=1)
+        return audio_data, sample_rate
+    except Exception as e:
+        raise Exception(f"Error in audio preparation: {str(e)}")
+
+def post_process_audio(separated_audio, output_path):
+    """分離後の音声データの後処理とファイル保存"""
+    try:
+        ensure_directory_exists(os.path.dirname(output_path))
+        sf.write(output_path, separated_audio, 44100, format='WAV', subtype='PCM_16')
+    except Exception as e:
+        raise Exception(f"Error in audio post-processing: {str(e)}")
+
+def ensure_directory_exists(directory):
+    """出力ディレクトリが存在することを確認"""
+    if directory and not os.path.exists(directory):
+        os.makedirs(directory)

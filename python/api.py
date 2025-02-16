@@ -4,7 +4,10 @@ import os
 import shutil
 import numpy as np
 import traceback
-from audio_processing import process_audio_file
+from audio_processing import process_audio_file, load_audio_file, post_process_audio
+import torch
+import librosa
+import openunmix
 
 def ensure_directory_exists(directory):
     if not os.path.exists(directory):
@@ -37,49 +40,59 @@ def rename_and_move_files(source_dir, target_base_dir):
     
     return moved_files
 
+class AudioProcessor:
+    def __init__(self):
+        self.model = None
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        
+    def initialize_model(self):
+        """モデルの初期化を行う"""
+        if self.model is None:
+            self.model = openunmix.OpenUnmix()
+            self.model.to(self.device)
+            
+    def process_audio(self, input_path, output_path):
+        """音源分離の実行"""
+        self.initialize_model()
+        
+        # 音声ファイルの読み込みと前処理
+        audio_data, sample_rate = load_audio_file(input_path)
+        if audio_data is None:
+            raise Exception(f"Error loading audio file {input_path}")
+        
+        # モデルによる処理
+        audio_tensor = torch.from_numpy(audio_data.T).float().to(self.device)
+        audio_tensor = audio_tensor[None, ...]
+        estimates = self.model(audio_tensor)
+        
+        # 結果の保存
+        base_name = os.path.splitext(os.path.basename(input_path))[0]
+        for i, source_name in enumerate(['vocals', 'drums', 'bass', 'other']):
+            source_audio = estimates[0, i, :].detach().cpu().numpy()
+            output_file = os.path.join(output_path, f"{base_name}_{source_name}.wav")
+            post_process_audio(source_audio.T, output_file)
+            
+        return {
+            "status": "success",
+            "input_file": input_path,
+            "output_directory": output_path
+        }
+
 def main():
-    try:
-        data = json.loads(sys.argv[1])
-        input_dir = data.get('inputDir')
-        output_dir = data.get('outputDir')
-        target_base_dir = data.get('targetBaseDir')
-        sources = data.get('sources', [])
-
-        if not all([input_dir, output_dir, target_base_dir]):
-            raise ValueError("Missing required directory paths")
-
-        ensure_directory_exists(output_dir)
-        processing_results = []
-        moved_files = []
-
-        for file_name in os.listdir(input_dir):
-            if file_name.endswith(('.wav', '.mp3')):
-                file_path = os.path.join(input_dir, file_name)
-                try:
-                    result = process_audio_file(file_path, sources, 'umxhq', 'cpu', output_dir)
-                    processing_results.append({"file": file_path, "status": "success", "message": result})
-                except Exception as e:
-                    processing_results.append({"file": file_path, "status": "error", "message": str(e), "traceback": traceback.format_exc()})
-
-        moved_files.extend(rename_and_move_files(input_dir, target_base_dir))
-        moved_files.extend(rename_and_move_files(output_dir, target_base_dir))
-
-        result = {
-            "processing_results": processing_results,
-            "moved_files": moved_files,
-            "overall_status": "success"
-        }
-
-    except Exception as e:
-        result = {
-            "processing_results": [],
-            "moved_files": [],
-            "overall_status": "error",
-            "error_message": str(e),
-            "traceback": traceback.format_exc()
-        }
-
-    print(json.dumps(result))
+    """APIのメインエントリーポイント"""
+    processor = AudioProcessor()
+    
+    while True:
+        command = input().strip()
+        if command == "exit":
+            break
+            
+        try:
+            args = json.loads(command)
+            result = processor.process_audio(args['input'], args['output'])
+            print(json.dumps({"status": "success", "result": result}))
+        except Exception as e:
+            print(json.dumps({"status": "error", "message": str(e)}))
 
 if __name__ == "__main__":
     main()
