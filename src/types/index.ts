@@ -119,6 +119,12 @@ export interface ElectronAPI {
     outputDir: string | null;
   }) => Promise<ConversionResult>;
 
+  // ファイル移動
+  moveFile: (params: {
+    sourcePath: string;
+    destinationDir: string;
+  }) => Promise<{ success: boolean; error?: string }>;
+
   // 音声処理関連
   processAudio: (options: AudioProcessingOptions) => Promise<AudioProcessingResult>;
 }
@@ -134,4 +140,53 @@ declare global {
     electronAPI: ElectronAPI;
     electron: ElectronEvents;
   }
-} 
+}
+
+// TranslationKeyをexportする
+export type TranslationKey = 
+  | 'app.title'
+  | 'tab.pdf-csv'
+  | 'tab.audio'
+  | 'settings.title'
+  | 'button.select'
+  | 'button.execute'
+  | 'button.save'
+  | 'input.apiKey'
+  | 'input.selectInputDir'
+  | 'input.selectOutputDir'
+  | 'settings.loaded'
+  | 'settings.saving'
+  | 'settings.savingDesc'
+  | 'settings.saved'
+  | 'success.title'
+  | 'success.dirSelected'
+  | 'error.title'
+  | 'error.loadSettings'
+  | 'error.saveSettings'
+  | 'error.dirSelect'
+  | 'audio.vocals'
+  | 'audio.drums'
+  | 'audio.bass'
+  | 'audio.other'
+  | 'audio.enableRenameMove'
+  | 'audio.processing'
+  | 'audio.processingDesc'
+  | 'audio.progress'
+  | 'pdf.title'
+  | 'pdf.file'
+  | 'pdf.selectFile'
+  | 'pdf.preview'
+  | 'pdf.converting'
+  | 'pdf.convertingToMarkdown'
+  | 'pdf.convertingToCsv'
+  | 'pdf.convertError'
+  | 'pdf.moveError'
+  | 'pdf.noMarkdownGenerated'
+  | 'pdf.noCsvGenerated'
+  | 'pdf.previewPlaceholder'
+  | 'pdf.fileSelected'
+  | 'pdf.fileSelectError'
+  | 'pdf.conversionComplete'
+  | 'pdf.csvSaved'
+  | 'pdf.toMarkdown'
+  | 'pdf.toCsv'; 

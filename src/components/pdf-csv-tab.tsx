@@ -1,26 +1,79 @@
-import React, { useState } from 'react';
-import path from 'path';
+import React, { useState, useCallback } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from './language-provider';
 
 export const PdfCsvTab: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [previewText, setPreviewText] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const { toast } = useToast();
+  const { t } = useLanguage();
+
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback(async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      const file = files[0];
+      // @ts-ignore - Electron specific property
+      const filePath = file.path || file.webkitRelativePath;
+      if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+        setSelectedFile(filePath);
+        toast({
+          type: 'success',
+          title: t('success.title'),
+          description: filePath,
+        });
+      } else {
+        toast({
+          type: 'error',
+          title: t('error.title'),
+          description: 'PDFファイルのみ対応しています',
+        });
+      }
+    }
+  }, [toast, t]);
 
   const handleFileSelect = async (): Promise<void> => {
     try {
-      setError(null);
       const result = await window.electronAPI.selectFile({
-        title: 'PDFファイルを選択',
+        title: t('pdf.selectFile'),
         filters: [{ name: 'PDF', extensions: ['pdf'] }],
       });
-      console.log('Selected file:', result);
       if (result) {
         setSelectedFile(result);
+        toast({
+          type: 'success',
+          title: t('success.title'),
+          description: result,
+        });
       }
     } catch (error) {
       console.error('ファイル選択エラー:', error);
-      setError('ファイルの選択中にエラーが発生しました');
+      toast({
+        type: 'error',
+        title: t('error.title'),
+        description: t('pdf.fileSelectError'),
+      });
     }
   };
 
@@ -28,25 +81,34 @@ export const PdfCsvTab: React.FC = () => {
     if (!selectedFile) return;
     try {
       setIsLoading(true);
-      setError(null);
-      const result = await window.electronAPI.convertPdfToMarkdown(selectedFile);
-      console.log('PDF to Markdown result:', {
-        success: result.success,
-        hasMarkdownText: !!result.markdown_text,
-        markdownTextLength: result.markdown_text?.length,
-        sample: result.markdown_text?.substring(0, 100) + '...',
+      toast({
+        type: 'loading',
+        title: t('pdf.converting'),
+        description: t('pdf.convertingToMarkdown'),
       });
+
+      const result = await window.electronAPI.convertPdfToMarkdown(selectedFile);
       if (result.success && result.markdown_text) {
         setPreviewText(result.markdown_text);
+        toast({
+          type: 'success',
+          title: t('success.title'),
+          description: t('pdf.conversionComplete'),
+        });
       } else {
-        setError(
-          result.error ||
-            'PDF変換中にエラーが発生しました。Markdownテキストが生成されませんでした。'
-        );
+        toast({
+          type: 'error',
+          title: t('pdf.convertError'),
+          description: result.error || t('pdf.noMarkdownGenerated'),
+        });
       }
     } catch (error) {
       console.error('PDF→Markdown変換エラー:', error);
-      setError('PDF→Markdown変換中にエラーが発生しました');
+      toast({
+        type: 'error',
+        title: t('pdf.convertError'),
+        description: error instanceof Error ? error.message : t('pdf.convertError'),
+      });
     } finally {
       setIsLoading(false);
     }
@@ -56,35 +118,71 @@ export const PdfCsvTab: React.FC = () => {
     if (!previewText || !selectedFile) return;
     try {
       setIsLoading(true);
-      setError(null);
-
-      console.log('Converting to CSV with markdown:', {
-        type: typeof previewText,
-        length: previewText.length,
-        sample: previewText.substring(0, 100),
+      toast({
+        type: 'loading',
+        title: t('pdf.converting'),
+        description: t('pdf.convertingToCsv'),
       });
 
+      // 設定から出力ディレクトリを取得
+      const settings = await window.electronAPI.getSettings();
+      const outputDir = settings.defaultOutputDir || selectedFile.substring(0, selectedFile.lastIndexOf('/'));
+
+      // まずinputディレクトリにCSVを生成
       const result = await window.electronAPI.convertMarkdownToCsv({
         markdownContent: previewText,
-        outputDir: selectedFile ? path.dirname(selectedFile) : null,
+        outputDir: selectedFile.substring(0, selectedFile.lastIndexOf('/')),
       });
 
-      console.log('CSV conversion result:', result);
-
       if (!result.success) {
-        setError(result.error || 'CSV変換中にエラーが発生しました');
+        toast({
+          type: 'error',
+          title: t('pdf.convertError'),
+          description: result.error || t('pdf.noCsvGenerated'),
+        });
       } else if (result.csvPaths && result.csvPaths.length > 0) {
-        console.log('CSV files created:', result.csvPaths);
-        setError(null);
-        alert(
-          result.message || `CSVファイルが生成されました: ${result.outputDir}`
-        );
+        // CSVファイルが生成されたら、outputDirに移動
+        try {
+          const moveResult = await window.electronAPI.moveFile({
+            sourcePath: result.csvPaths[0],
+            destinationDir: outputDir,
+          });
+
+          if (moveResult.success) {
+            toast({
+              type: 'success',
+              title: t('success.title'),
+              description: `${t('pdf.csvSaved')}: ${outputDir}`,
+            });
+          } else {
+            toast({
+              type: 'error',
+              title: t('pdf.moveError'),
+              description: moveResult.error || t('pdf.moveError'),
+            });
+          }
+        } catch (moveError) {
+          console.error('ファイル移動エラー:', moveError);
+          toast({
+            type: 'error',
+            title: t('pdf.moveError'),
+            description: moveError instanceof Error ? moveError.message : t('pdf.moveError'),
+          });
+        }
       } else {
-        setError('CSVファイルが生成されませんでした');
+        toast({
+          type: 'error',
+          title: t('pdf.convertError'),
+          description: t('pdf.noCsvGenerated'),
+        });
       }
     } catch (error) {
       console.error('Markdown→CSV変換エラー:', error);
-      setError('Markdown→CSV変換中にエラーが発生しました');
+      toast({
+        type: 'error',
+        title: t('pdf.convertError'),
+        description: error instanceof Error ? error.message : t('pdf.convertError'),
+      });
     } finally {
       setIsLoading(false);
     }
@@ -92,67 +190,94 @@ export const PdfCsvTab: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-2">PDFファイル</label>
-          <div className="flex items-center space-x-4">
-            <input
-              type="text"
-              value={selectedFile || ''}
-              readOnly
-              className="flex-1 px-4 py-2 rounded-lg bg-slate-700 text-slate-200 dark:bg-slate-700 dark:text-slate-200 light:bg-slate-100 light:text-slate-900"
-              placeholder="PDFファイルを選択してください"
-            />
-            <button
-              onClick={handleFileSelect}
-              disabled={isLoading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors disabled:bg-slate-600 disabled:cursor-not-allowed"
-            >
-              選択
-            </button>
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('pdf.title')}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{t('pdf.file')}</label>
+              <div
+                className={`flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-6 transition-colors ${
+                  isDragging
+                    ? 'border-primary bg-primary/10'
+                    : 'border-muted-foreground/25 hover:border-primary/50'
+                }`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                <div className="flex items-center space-x-2">
+                  <Input
+                    type="text"
+                    value={selectedFile || ''}
+                    readOnly
+                    placeholder={t('pdf.selectFile')}
+                    className="flex-1"
+                  />
+                  <Button
+                    onClick={handleFileSelect}
+                    disabled={isLoading}
+                    variant="secondary"
+                  >
+                    {t('button.select')}
+                  </Button>
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  PDFファイルをドラッグ&ドロップするか、選択ボタンをクリックしてください
+                </p>
+              </div>
+            </div>
+
+            <div className="flex space-x-2">
+              <Button
+                onClick={handlePdfToMarkdown}
+                disabled={!selectedFile || isLoading}
+                className="flex-1"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {t('pdf.converting')}
+                  </>
+                ) : (
+                  t('pdf.toMarkdown')
+                )}
+              </Button>
+              <Button
+                onClick={handleMarkdownToCsv}
+                disabled={!previewText || !selectedFile || isLoading}
+                className="flex-1"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {t('pdf.converting')}
+                  </>
+                ) : (
+                  t('pdf.toCsv')
+                )}
+              </Button>
+            </div>
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        <div className="flex space-x-4">
-          <button
-            onClick={handlePdfToMarkdown}
-            disabled={!selectedFile || isLoading}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              !selectedFile || isLoading
-                ? 'bg-slate-600 text-slate-300 cursor-not-allowed'
-                : 'bg-blue-600 text-white hover:bg-blue-500'
-            }`}
-          >
-            {isLoading ? '変換中...' : 'PDF → Markdown'}
-          </button>
-          <button
-            onClick={handleMarkdownToCsv}
-            disabled={!previewText || !selectedFile || isLoading}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              !previewText || !selectedFile || isLoading
-                ? 'bg-slate-600 text-slate-300 cursor-not-allowed'
-                : 'bg-blue-600 text-white hover:bg-blue-500'
-            }`}
-          >
-            {isLoading ? '変換中...' : 'Markdown → CSV'}
-          </button>
-        </div>
-
-        {error && (
-          <div className="p-4 bg-red-500 text-white rounded-lg">{error}</div>
-        )}
-      </div>
-
-      <div className="space-y-2">
-        <label className="block text-sm font-medium">プレビュー</label>
-        <div className="h-[400px] p-4 rounded-lg bg-slate-700 dark:bg-slate-700 light:bg-slate-100 overflow-auto">
-          <pre className="whitespace-pre-wrap font-mono text-sm">
-            {isLoading
-              ? '変換中...'
-              : previewText || 'プレビューはここに表示されます'}
-          </pre>
-        </div>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('pdf.preview')}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="relative h-[400px] rounded-md border">
+            <pre className="absolute inset-0 overflow-auto p-4 font-mono text-sm">
+              {isLoading
+                ? t('pdf.converting')
+                : previewText || t('pdf.previewPlaceholder')}
+            </pre>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }; 

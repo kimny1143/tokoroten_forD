@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { AppSettings } from '@/types';
-
-interface StatusMessage {
-  type: 'success' | 'error' | null;
-  text: string;
-}
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from './language-provider';
 
 export const SettingsTab: React.FC = () => {
   const [settings, setSettings] = useState<AppSettings>({
@@ -27,7 +28,8 @@ export const SettingsTab: React.FC = () => {
     defaultOutputDir: '',
   });
   const [saving, setSaving] = useState<boolean>(false);
-  const [status, setStatus] = useState<StatusMessage>({ type: null, text: '' });
+  const { toast } = useToast();
+  const { t } = useLanguage();
 
   useEffect(() => {
     loadSettings();
@@ -35,51 +37,65 @@ export const SettingsTab: React.FC = () => {
 
   const loadSettings = async (): Promise<void> => {
     try {
-      setStatus({ type: null, text: '' });
       const savedSettings = await window.electronAPI.getSettings();
       setSettings(savedSettings);
-      console.log('設定を読み込みました');
+      toast({
+        type: 'success',
+        title: t('settings.title'),
+        description: t('settings.loaded'),
+      });
     } catch (error) {
       console.error('設定の読み込みエラー:', error);
-      setStatus({
+      toast({
         type: 'error',
-        text: '設定の読み込みに失敗しました',
+        title: t('error.title'),
+        description: t('error.loadSettings'),
       });
     }
   };
 
   const handleDefaultInputDirSelect = async (): Promise<void> => {
     try {
-      setStatus({ type: null, text: '' });
       const result = await window.electronAPI.selectDirectory({
-        title: 'デフォルト入力ディレクトリを選択',
+        title: t('input.selectInputDir'),
       });
       if (result) {
         setSettings((prev) => ({ ...prev, defaultInputDir: result }));
+        toast({
+          type: 'success',
+          title: t('success.title'),
+          description: t('success.dirSelected'),
+        });
       }
     } catch (error) {
       console.error('ディレクトリ選択エラー:', error);
-      setStatus({
+      toast({
         type: 'error',
-        text: 'ディレクトリの選択に失敗しました',
+        title: t('error.title'),
+        description: t('error.dirSelect'),
       });
     }
   };
 
   const handleDefaultOutputDirSelect = async (): Promise<void> => {
     try {
-      setStatus({ type: null, text: '' });
       const result = await window.electronAPI.selectDirectory({
-        title: 'デフォルト出力ディレクトリを選択',
+        title: t('input.selectOutputDir'),
       });
       if (result) {
         setSettings((prev) => ({ ...prev, defaultOutputDir: result }));
+        toast({
+          type: 'success',
+          title: t('success.title'),
+          description: t('success.dirSelected'),
+        });
       }
     } catch (error) {
       console.error('ディレクトリ選択エラー:', error);
-      setStatus({
+      toast({
         type: 'error',
-        text: 'ディレクトリの選択に失敗しました',
+        title: t('error.title'),
+        description: t('error.dirSelect'),
       });
     }
   };
@@ -87,24 +103,32 @@ export const SettingsTab: React.FC = () => {
   const handleSaveSettings = async (): Promise<void> => {
     try {
       setSaving(true);
-      setStatus({ type: null, text: '' });
+      toast({
+        type: 'loading',
+        title: t('settings.saving'),
+        description: t('settings.savingDesc'),
+      });
+
       const result = await window.electronAPI.saveSettings(settings);
       if (result) {
-        setStatus({
+        toast({
           type: 'success',
-          text: '設定を保存しました',
+          title: t('success.title'),
+          description: t('settings.saved'),
         });
       } else {
-        setStatus({
+        toast({
           type: 'error',
-          text: '設定の保存に失敗しました',
+          title: t('error.title'),
+          description: t('error.saveSettings'),
         });
       }
     } catch (error) {
       console.error('設定の保存エラー:', error);
-      setStatus({
+      toast({
         type: 'error',
-        text: '設定の保存中にエラーが発生しました',
+        title: t('error.title'),
+        description: t('error.saveSettings'),
       });
     } finally {
       setSaving(false);
@@ -113,84 +137,86 @@ export const SettingsTab: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <label className="block text-sm font-medium mb-2">API Key</label>
-        <input
-          type="password"
-          value={settings.apiKey || ''}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            setSettings((prev) => ({ ...prev, apiKey: e.target.value }))
-          }
-          className="w-full px-4 py-2 rounded-lg bg-slate-700 text-slate-200 dark:bg-slate-700 dark:text-slate-200 light:bg-slate-100 light:text-slate-900"
-          placeholder="API Keyを入力してください"
-        />
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('settings.title')}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              {t('input.apiKey')}
+            </label>
+            <Input
+              type="password"
+              value={settings.apiKey || ''}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setSettings((prev) => ({ ...prev, apiKey: e.target.value }))
+              }
+              className="w-full"
+              placeholder={t('input.apiKey')}
+            />
+          </div>
 
-      <div>
-        <label className="block text-sm font-medium mb-2">
-          デフォルト入力ディレクトリ
-        </label>
-        <div className="flex items-center space-x-4">
-          <input
-            type="text"
-            value={settings.defaultInputDir || ''}
-            readOnly
-            className="flex-1 px-4 py-2 rounded-lg bg-slate-700 text-slate-200 dark:bg-slate-700 dark:text-slate-200 light:bg-slate-100 light:text-slate-900"
-            placeholder="デフォルト入力ディレクトリを選択してください"
-          />
-          <button
-            onClick={handleDefaultInputDirSelect}
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              {t('input.selectInputDir')}
+            </label>
+            <div className="flex items-center space-x-4">
+              <Input
+                type="text"
+                value={settings.defaultInputDir || ''}
+                readOnly
+                className="flex-1"
+                placeholder={t('input.selectInputDir')}
+              />
+              <Button
+                onClick={handleDefaultInputDirSelect}
+                disabled={saving}
+                variant="secondary"
+              >
+                {t('button.select')}
+              </Button>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              {t('input.selectOutputDir')}
+            </label>
+            <div className="flex items-center space-x-4">
+              <Input
+                type="text"
+                value={settings.defaultOutputDir || ''}
+                readOnly
+                className="flex-1"
+                placeholder={t('input.selectOutputDir')}
+              />
+              <Button
+                onClick={handleDefaultOutputDirSelect}
+                disabled={saving}
+                variant="secondary"
+              >
+                {t('button.select')}
+              </Button>
+            </div>
+          </div>
+
+          <Button
+            onClick={handleSaveSettings}
             disabled={saving}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors disabled:bg-slate-600 disabled:cursor-not-allowed"
+            className="w-full"
           >
-            選択
-          </button>
-        </div>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium mb-2">
-          デフォルト出力ディレクトリ
-        </label>
-        <div className="flex items-center space-x-4">
-          <input
-            type="text"
-            value={settings.defaultOutputDir || ''}
-            readOnly
-            className="flex-1 px-4 py-2 rounded-lg bg-slate-700 text-slate-200 dark:bg-slate-700 dark:text-slate-200 light:bg-slate-100 light:text-slate-900"
-            placeholder="デフォルト出力ディレクトリを選択してください"
-          />
-          <button
-            onClick={handleDefaultOutputDirSelect}
-            disabled={saving}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors disabled:bg-slate-600 disabled:cursor-not-allowed"
-          >
-            選択
-          </button>
-        </div>
-      </div>
-
-      {status.type && (
-        <div
-          className={`p-4 rounded-lg ${
-            status.type === 'success' ? 'bg-green-500' : 'bg-red-500'
-          } text-white`}
-        >
-          {status.text}
-        </div>
-      )}
-
-      <button
-        onClick={handleSaveSettings}
-        disabled={saving}
-        className={`w-full px-4 py-2 rounded-lg transition-colors ${
-          saving
-            ? 'bg-slate-600 text-slate-300 cursor-not-allowed'
-            : 'bg-blue-600 text-white hover:bg-blue-500'
-        }`}
-      >
-        {saving ? '保存中...' : '設定を保存'}
-      </button>
+            {saving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {t('settings.saving')}
+              </>
+            ) : (
+              t('button.save')
+            )}
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }; 

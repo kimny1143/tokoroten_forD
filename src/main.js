@@ -558,3 +558,26 @@ ipcMain.handle('dialog:selectDirectory', async (event, options) => {
   }
   return filePaths[0];
 });
+
+// ファイル移動のハンドラーを追加
+ipcMain.handle('file:move', async (event, params) => {
+  try {
+    const { sourcePath, destinationDir } = params;
+    
+    // 出力ディレクトリが存在しない場合は作成
+    if (!fs.existsSync(destinationDir)) {
+      fs.mkdirSync(destinationDir, { recursive: true });
+    }
+
+    const fileName = path.basename(sourcePath);
+    const destinationPath = path.join(destinationDir, fileName);
+
+    // ファイルを移動
+    fs.renameSync(sourcePath, destinationPath);
+
+    return { success: true };
+  } catch (error) {
+    console.error('ファイル移動エラー:', error);
+    return { success: false, error: error.message };
+  }
+});

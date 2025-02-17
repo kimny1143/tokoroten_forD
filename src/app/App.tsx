@@ -1,75 +1,60 @@
 import React, { useState } from 'react';
-import { ThemeProvider } from '../components/theme-provider';
-import { ThemeToggle } from '../components/theme-toggle';
-import { SettingsToggle } from '../components/settings-toggle';
+import { Header } from '../components/header';
 import { PdfCsvTab } from '../components/pdf-csv-tab';
 import { AudioTab } from '../components/audio-tab';
 import { SettingsTab } from '../components/settings-tab';
+import * as Tabs from '@radix-ui/react-tabs';
+import { useLanguage } from '../components/language-provider';
 
 type TabType = 'pdf-csv' | 'audio';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('pdf-csv');
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const { t } = useLanguage();
 
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="tokoroten-ui-theme">
-      <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 text-slate-50 dark:from-slate-900 dark:to-slate-800 dark:text-slate-50 light:from-slate-100 light:to-slate-200 light:text-slate-900">
-        <header className="border-b border-slate-700 p-4 dark:border-slate-700 light:border-slate-300">
-          <div className="container mx-auto flex items-center justify-between">
-            <h1 className="text-2xl font-bold">Tokoroten Audio Processor</h1>
-            <div className="flex items-center space-x-4">
-              <ThemeToggle />
-              <SettingsToggle
-                isOpen={isSettingsOpen}
-                onToggle={() => setIsSettingsOpen(!isSettingsOpen)}
-              />
-            </div>
-          </div>
-        </header>
-
+    <div className="min-h-screen bg-gradient-to-br from-teal-700 via-blue-700 to-slate-800">
+      <div className="min-h-screen bg-background/30 backdrop-blur-[2px] supports-[backdrop-filter]:bg-background/20">
+        <Header
+          isSettingsOpen={isSettingsOpen}
+          onSettingsToggle={() => setIsSettingsOpen(!isSettingsOpen)}
+        />
         <main className="container mx-auto p-4">
-          {!isSettingsOpen ? (
-            <div className="grid gap-4">
-              <div className="flex space-x-4">
-                <button
-                  onClick={() => setActiveTab('pdf-csv')}
-                  className={`px-4 py-2 rounded-lg transition-colors ${
-                    activeTab === 'pdf-csv'
-                      ? 'bg-blue-600 text-white dark:bg-blue-600 light:bg-blue-500'
-                      : 'bg-slate-700 text-slate-200 hover:bg-slate-600 dark:bg-slate-700 dark:text-slate-200 light:bg-slate-300 light:text-slate-700'
-                  }`}
-                >
-                  PDF/CSV変換
-                </button>
-                <button
-                  onClick={() => setActiveTab('audio')}
-                  className={`px-4 py-2 rounded-lg transition-colors ${
-                    activeTab === 'audio'
-                      ? 'bg-blue-600 text-white dark:bg-blue-600 light:bg-blue-500'
-                      : 'bg-slate-700 text-slate-200 hover:bg-slate-600 dark:bg-slate-700 dark:text-slate-200 light:bg-slate-300 light:text-slate-700'
-                  }`}
-                >
-                  音声処理
-                </button>
-              </div>
-              
-              <div className="bg-slate-800 rounded-lg p-6 shadow-lg dark:bg-slate-800 light:bg-white">
-                {activeTab === 'pdf-csv' ? (
-                  <PdfCsvTab />
-                ) : (
-                  <AudioTab />
-                )}
-              </div>
-            </div>
+          {isSettingsOpen ? (
+            <SettingsTab />
           ) : (
-            <div className="bg-slate-800 rounded-lg p-6 shadow-lg dark:bg-slate-800 light:bg-white">
-              <SettingsTab />
-            </div>
+            <Tabs.Root
+              value={activeTab}
+              onValueChange={(value) => setActiveTab(value as TabType)}
+            >
+              <Tabs.List className="flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground w-full">
+                <Tabs.Trigger
+                  value="pdf-csv"
+                  className="flex-1 inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                >
+                  {t('tab.pdf-csv')}
+                </Tabs.Trigger>
+                <Tabs.Trigger
+                  value="audio"
+                  className="flex-1 inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                >
+                  {t('tab.audio')}
+                </Tabs.Trigger>
+              </Tabs.List>
+              <div className="mt-6">
+                <Tabs.Content value="pdf-csv" className="focus-visible:outline-none">
+                  <PdfCsvTab />
+                </Tabs.Content>
+                <Tabs.Content value="audio" className="focus-visible:outline-none">
+                  <AudioTab />
+                </Tabs.Content>
+              </div>
+            </Tabs.Root>
           )}
         </main>
       </div>
-    </ThemeProvider>
+    </div>
   );
 };
 

@@ -25,4 +25,5 @@ export default defineConfig({
   optimizeDeps: {
     include: ['react', 'react-dom'],
   },
+  assetsInclude: ['**/*.icns', '**/*.png'],
 }); 

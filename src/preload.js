@@ -16,5 +16,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   selectDirectory: (options) => ipcRenderer.invoke('dialog:selectDirectory', options),
   getSettings: () => ipcRenderer.invoke('settings:get'),
   saveSettings: (settings) => ipcRenderer.invoke('settings:save', settings),
-  selectFile: (options) => ipcRenderer.invoke('dialog:selectFile', options)
+  selectFile: (options) => ipcRenderer.invoke('dialog:selectFile', options),
+  moveFile: (params) => ipcRenderer.invoke('file:move', params)
 });
