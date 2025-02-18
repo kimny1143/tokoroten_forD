@@ -65,3 +65,9 @@ Thumbs.db
 *.dylib
 resources/api/_internal/
 resources/api/api
+
+# Build output
+/release
+/python/dist
+/python/build
+/python/api

@@ -132,14 +132,24 @@ ipcMain.handle('process-audio', async (event, params) => {
         };
 
         const result = await new Promise((resolve, reject) => {
-            const pythonProcess = spawn(pythonPath, [
-                scriptPath,
-                '--mode', 'audio',
-                '--input-dir', inputDir,
-                '--output-dir', outputDir,
-                '--sources', JSON.stringify(sources),
-                '--enable-rename-move', options.enableRenameMove ? 'true' : 'false'
-            ], {
+            const args = isDev
+                ? [
+                    scriptPath,
+                    '--mode', 'audio',
+                    '--input-dir', inputDir,
+                    '--output-dir', outputDir,
+                    '--sources', JSON.stringify(sources),
+                    '--enable-rename-move', options.enableRenameMove ? 'true' : 'false'
+                ]
+                : [
+                    '--mode', 'audio',
+                    '--input-dir', inputDir,
+                    '--output-dir', outputDir,
+                    '--sources', JSON.stringify(sources),
+                    '--enable-rename-move', options.enableRenameMove ? 'true' : 'false'
+                ];
+
+            const pythonProcess = spawn(pythonPath, args, {
                 env,
                 stdio: ['pipe', 'pipe', 'pipe']
             });
@@ -275,13 +285,22 @@ ipcMain.handle('convert-pdf-to-markdown', async (event, params) => {
         locale: env.LANG
       });
 
-      const pythonProcess = spawn(pythonPath, [
-        scriptPath,
-        '--mode', 'pdf-to-markdown',
-        '--input', params.pdfPath,
-        '--output', outputPath,
-        '--api-key', apiKey
-      ], {
+      const args = isDev 
+        ? [
+            scriptPath,
+            '--mode', 'pdf-to-markdown',
+            '--input', params.pdfPath,
+            '--output', outputPath,
+            '--api-key', apiKey
+          ]
+        : [
+            '--mode', 'pdf-to-markdown',
+            '--input', params.pdfPath,
+            '--output', outputPath,
+            '--api-key', apiKey
+          ];
+
+      const pythonProcess = spawn(pythonPath, args, {
         env,
         stdio: ['pipe', 'pipe', 'pipe'],
         windowsHide: true
@@ -412,12 +431,20 @@ ipcMain.handle('convert-markdown-to-csv', async (event, params) => {
         outputDir
       });
 
-      const pythonProcess = spawn(pythonPath, [
-        scriptPath,
-        '--mode', 'markdown-to-csv',
-        '--input', markdownPath,
-        '--output-dir', outputDir
-      ], {
+      const args = isDev
+        ? [
+            scriptPath,
+            '--mode', 'markdown-to-csv',
+            '--input', markdownPath,
+            '--output-dir', outputDir
+          ]
+        : [
+            '--mode', 'markdown-to-csv',
+            '--input', markdownPath,
+            '--output-dir', outputDir
+          ];
+
+      const pythonProcess = spawn(pythonPath, args, {
         env,
         stdio: ['pipe', 'pipe', 'pipe'],
         windowsHide: true

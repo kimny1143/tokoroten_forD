@@ -2,6 +2,7 @@
   "name": "tokoroten-localapp",
   "version": "1.0.0",
   "description": "Audio processing and PDF/CSV conversion tool",
+  "author": "Tokoroten Audio Team",
   "main": "src/main.js",
   "scripts": {
     "dev": "vite",
@@ -15,8 +16,8 @@
     "build:python": "cd python && pyinstaller --clean --log-level DEBUG api.spec",
     "copy:python": "node scripts/copyPython.js",
     "vite-build": "vite build",
-    "build:electron": "electron-builder --mac",
-    "build:mac": "npm run clean && npm run prepare:dirs && npm run build:python && npm run copy:python && npm run vite-build && npm run build:electron",
+    "build:electron": "electron-builder --mac --config.mac.identity=null",
+    "build:mac": "( npm run clean && npm run prepare:dirs && npm run build:python && npm run copy:python && npm run vite-build && npm run build:electron ) > dev_docs/logs/build.log 2>&1",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -65,7 +66,15 @@
   "build": {
     "appId": "com.tokoroten.audioprocessor",
     "mac": {
-      "category": "public.app-category.music"
+      "category": "public.app-category.music",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "target": ["dmg"]
+    },
+    "dmg": {
+      "title": "Tokoroten Audio Processor"
     },
     "files": [
       "dist/**/*",
@@ -74,13 +83,29 @@
     ],
     "extraResources": [
       {
-        "from": "python/api",
-        "to": "python/api"
+        "from": "python/dist/api",
+        "to": "python"
       },
       {
         "from": "libs/",
         "to": "libs",
         "filter": ["**/*"]
+      },
+      {
+        "from": "python/api",
+        "to": "python"
+      },
+      {
+        "from": "/opt/homebrew/lib/libavutil.58.dylib",
+        "to": "lib/libavutil.58.dylib"
+      },
+      {
+        "from": "/opt/homebrew/lib/libavutil.57.dylib",
+        "to": "lib/libavutil.57.dylib"
+      },
+      {
+        "from": "/opt/homebrew/lib/libavutil.56.dylib",
+        "to": "lib/libavutil.56.dylib"
       }
     ],
     "directories": {
