@@ -48,7 +48,13 @@ type TranslationKey =
   | 'pdf.conversionComplete'
   | 'pdf.csvSaved'
   | 'pdf.toMarkdown'
-  | 'pdf.toCsv';
+  | 'pdf.toCsv'
+  | 'pdf.usePdfConversion'
+  | 'pdf.useExistingMarkdown'
+  | 'pdf.selectMarkdownFile'
+  | 'pdf.dragAndDropPdf'
+  | 'pdf.dragAndDropMarkdown'
+  | 'pdf.markdownFileReadError';
 
 type TranslationType = Record<Language, Record<TranslationKey, string>>;
 
@@ -106,6 +112,12 @@ const translations: TranslationType = {
     'pdf.csvSaved': 'CSV file saved',
     'pdf.toMarkdown': 'PDF → Markdown',
     'pdf.toCsv': 'Markdown → CSV',
+    'pdf.usePdfConversion': 'Convert PDF File',
+    'pdf.useExistingMarkdown': 'Use Existing Markdown',
+    'pdf.selectMarkdownFile': 'Select Markdown File',
+    'pdf.dragAndDropPdf': 'Drag & drop a PDF file here or click the select button',
+    'pdf.dragAndDropMarkdown': 'Drag & drop a Markdown file here or click the select button',
+    'pdf.markdownFileReadError': 'Failed to read Markdown file'
   },
   ja: {
     'app.title': 'Tokoroten Audio Processor',
@@ -154,6 +166,12 @@ const translations: TranslationType = {
     'pdf.csvSaved': 'CSVファイルを保存しました',
     'pdf.toMarkdown': 'PDF → Markdown',
     'pdf.toCsv': 'Markdown → CSV',
+    'pdf.usePdfConversion': 'PDFファイルの変換',
+    'pdf.useExistingMarkdown': '既存のMarkdownを使用する',
+    'pdf.selectMarkdownFile': 'Markdownファイルを選択',
+    'pdf.dragAndDropPdf': 'PDFファイルをドラッグ&ドロップするか、選択ボタンをクリックしてください',
+    'pdf.dragAndDropMarkdown': 'Markdownファイルをドラッグ&ドロップするか、選択ボタンをクリックしてください',
+    'pdf.markdownFileReadError': 'Markdownファイルの読み込みに失敗しました'
   },
 };
 

@@ -547,6 +547,17 @@ ipcMain.handle('save-api-key', async (event, key) => {
   }
 });
 
+// ファイル読み込みのハンドラーを追加
+ipcMain.handle('file:read', async (event, filePath) => {
+  try {
+    const content = await fs.promises.readFile(filePath, 'utf8');
+    return { success: true, content };
+  } catch (error) {
+    console.error('ファイル読み込みエラー:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 // ファイル選択のハンドラーを追加
 ipcMain.handle('dialog:selectFile', async (event, options) => {
   const { canceled, filePaths } = await dialog.showOpenDialog(BrowserWindow.getFocusedWindow(), {

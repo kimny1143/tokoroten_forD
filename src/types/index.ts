@@ -125,6 +125,9 @@ export interface ElectronAPI {
     destinationDir: string;
   }) => Promise<{ success: boolean; error?: string }>;
 
+  // ファイル読み込み
+  readFile: (filePath: string) => Promise<{ success: boolean; content?: string; error?: string }>;
+
   // 音声処理関連
   processAudio: (options: AudioProcessingOptions) => Promise<AudioProcessingResult>;
 }

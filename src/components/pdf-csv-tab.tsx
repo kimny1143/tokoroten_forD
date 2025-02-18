@@ -5,12 +5,19 @@ import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from './language-provider';
+import * as Dialog from '@radix-ui/react-dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export const PdfCsvTab: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [previewText, setPreviewText] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState<boolean>(false);
+  const [usePdfConversion, setUsePdfConversion] = useState<boolean>(true);
+  const [useExistingMarkdown, setUseExistingMarkdown] = useState<boolean>(false);
+  const [markdownFile, setMarkdownFile] = useState<string | null>(null);
+  const [isMarkdownDragging, setIsMarkdownDragging] = useState<boolean>(false);
   const { toast } = useToast();
   const { t } = useLanguage();
 
@@ -115,7 +122,7 @@ export const PdfCsvTab: React.FC = () => {
   };
 
   const handleMarkdownToCsv = async (): Promise<void> => {
-    if (!previewText || !selectedFile) return;
+    if (!previewText) return;
     try {
       setIsLoading(true);
       toast({
@@ -126,21 +133,18 @@ export const PdfCsvTab: React.FC = () => {
 
       // 設定から出力ディレクトリを取得
       const settings = await window.electronAPI.getSettings();
-      const outputDir = settings.defaultOutputDir || selectedFile.substring(0, selectedFile.lastIndexOf('/'));
+      const filePath = useExistingMarkdown ? markdownFile : selectedFile;
+      if (!filePath) return;
+      
+      const outputDir = settings.defaultOutputDir || filePath.substring(0, filePath.lastIndexOf('/'));
 
       // まずinputディレクトリにCSVを生成
       const result = await window.electronAPI.convertMarkdownToCsv({
         markdownContent: previewText,
-        outputDir: selectedFile.substring(0, selectedFile.lastIndexOf('/')),
+        outputDir: filePath.substring(0, filePath.lastIndexOf('/')),
       });
 
-      if (!result.success) {
-        toast({
-          type: 'error',
-          title: t('pdf.convertError'),
-          description: result.error || t('pdf.noCsvGenerated'),
-        });
-      } else if (result.csvPaths && result.csvPaths.length > 0) {
+      if (result.success && result.csvPaths && result.csvPaths.length > 0) {
         // CSVファイルが生成されたら、outputDirに移動
         try {
           const moveResult = await window.electronAPI.moveFile({
@@ -149,6 +153,7 @@ export const PdfCsvTab: React.FC = () => {
           });
 
           if (moveResult.success) {
+            setShowSuccessDialog(true);  // 成功ダイアログを表示
             toast({
               type: 'success',
               title: t('success.title'),
@@ -173,7 +178,7 @@ export const PdfCsvTab: React.FC = () => {
         toast({
           type: 'error',
           title: t('pdf.convertError'),
-          description: t('pdf.noCsvGenerated'),
+          description: result.error || t('pdf.noCsvGenerated'),
         });
       }
     } catch (error) {
@@ -188,52 +193,240 @@ export const PdfCsvTab: React.FC = () => {
     }
   };
 
+  const handleMarkdownDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsMarkdownDragging(true);
+  }, []);
+
+  const handleMarkdownDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsMarkdownDragging(false);
+  }, []);
+
+  const handleMarkdownDrop = useCallback(async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsMarkdownDragging(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      const file = files[0];
+      // @ts-ignore - Electron specific property
+      const filePath = file.path || file.webkitRelativePath;
+      if (file.name.toLowerCase().endsWith('.md')) {
+        setMarkdownFile(filePath);
+        // ファイルの内容を読み込んでプレビューに表示
+        try {
+          const result = await window.electronAPI.readFile(filePath);
+          if (result.success && result.content) {
+            setPreviewText(result.content);
+            toast({
+              type: 'success',
+              title: t('success.title'),
+              description: filePath,
+            });
+          } else {
+            throw new Error(result.error || t('pdf.markdownFileReadError'));
+          }
+        } catch (error) {
+          console.error('Markdownファイル読み込みエラー:', error);
+          toast({
+            type: 'error',
+            title: t('error.title'),
+            description: t('pdf.markdownFileReadError'),
+          });
+        }
+      } else {
+        toast({
+          type: 'error',
+          title: t('error.title'),
+          description: 'Markdownファイルのみ対応しています',
+        });
+      }
+    }
+  }, [toast, t]);
+
+  const handleMarkdownFileSelect = async (): Promise<void> => {
+    try {
+      const result = await window.electronAPI.selectFile({
+        title: t('pdf.selectMarkdownFile'),
+        filters: [{ name: 'Markdown', extensions: ['md'] }],
+      });
+      if (result) {
+        setMarkdownFile(result);
+        // ファイルの内容を読み込んでプレビューに表示
+        const fileResult = await window.electronAPI.readFile(result);
+        if (fileResult.success && fileResult.content) {
+          setPreviewText(fileResult.content);
+          toast({
+            type: 'success',
+            title: t('success.title'),
+            description: result,
+          });
+        } else {
+          throw new Error(fileResult.error || t('pdf.markdownFileReadError'));
+        }
+      }
+    } catch (error) {
+      console.error('ファイル選択エラー:', error);
+      toast({
+        type: 'error',
+        title: t('error.title'),
+        description: t('pdf.markdownFileReadError'),
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
+      <Dialog.Root open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+          <Dialog.Content className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg">
+            <div className="flex flex-col space-y-1.5 text-center sm:text-left">
+              <Dialog.Title className="text-2xl font-semibold leading-none tracking-tight">
+                Success!!!
+              </Dialog.Title>
+              <Dialog.Description className="text-sm text-muted-foreground">
+                {t('pdf.conversionComplete')}
+              </Dialog.Description>
+            </div>
+            <div className="flex justify-center">
+              <Button
+                onClick={() => setShowSuccessDialog(false)}
+                className="w-24"
+              >
+                OK
+              </Button>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+
       <Card>
         <CardHeader>
           <CardTitle>{t('pdf.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{t('pdf.file')}</label>
-              <div
-                className={`flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-6 transition-colors ${
-                  isDragging
-                    ? 'border-primary bg-primary/10'
-                    : 'border-muted-foreground/25 hover:border-primary/50'
-                }`}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                checked={usePdfConversion}
+                onCheckedChange={(checked: boolean | 'indeterminate') => {
+                  setUsePdfConversion(checked === true);
+                  if (checked === true) {
+                    setUseExistingMarkdown(false);
+                    setMarkdownFile(null);
+                  }
+                }}
+                id="pdf-conversion"
+              />
+              <label
+                htmlFor="pdf-conversion"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
               >
-                <div className="flex items-center space-x-2">
-                  <Input
-                    type="text"
-                    value={selectedFile || ''}
-                    readOnly
-                    placeholder={t('pdf.selectFile')}
-                    className="flex-1"
-                  />
-                  <Button
-                    onClick={handleFileSelect}
-                    disabled={isLoading}
-                    variant="secondary"
-                  >
-                    {t('button.select')}
-                  </Button>
-                </div>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  PDFファイルをドラッグ&ドロップするか、選択ボタンをクリックしてください
-                </p>
-              </div>
+                {t('pdf.usePdfConversion')}
+              </label>
             </div>
+
+            {usePdfConversion && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{t('pdf.file')}</label>
+                <div
+                  className={`flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-6 transition-colors ${
+                    isDragging
+                      ? 'border-primary bg-primary/10'
+                      : 'border-muted-foreground/25 hover:border-primary/50'
+                  }`}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                >
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      type="text"
+                      value={selectedFile || ''}
+                      readOnly
+                      placeholder={t('pdf.selectFile')}
+                      className="flex-1"
+                    />
+                    <Button
+                      onClick={handleFileSelect}
+                      disabled={isLoading}
+                      variant="secondary"
+                    >
+                      {t('button.select')}
+                    </Button>
+                  </div>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {t('pdf.dragAndDropPdf')}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                checked={useExistingMarkdown}
+                onCheckedChange={(checked: boolean | 'indeterminate') => {
+                  setUseExistingMarkdown(checked === true);
+                  if (checked === true) {
+                    setUsePdfConversion(false);
+                    setSelectedFile(null);
+                  }
+                }}
+                id="existing-markdown"
+              />
+              <label
+                htmlFor="existing-markdown"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                {t('pdf.useExistingMarkdown')}
+              </label>
+            </div>
+
+            {useExistingMarkdown && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{t('pdf.selectMarkdownFile')}</label>
+                <div
+                  className={`flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-6 transition-colors ${
+                    isMarkdownDragging
+                      ? 'border-primary bg-primary/10'
+                      : 'border-muted-foreground/25 hover:border-primary/50'
+                  }`}
+                  onDragOver={handleMarkdownDragOver}
+                  onDragLeave={handleMarkdownDragLeave}
+                  onDrop={handleMarkdownDrop}
+                >
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      type="text"
+                      value={markdownFile || ''}
+                      readOnly
+                      placeholder={t('pdf.selectMarkdownFile')}
+                      className="flex-1"
+                    />
+                    <Button
+                      onClick={handleMarkdownFileSelect}
+                      disabled={isLoading}
+                      variant="secondary"
+                    >
+                      {t('button.select')}
+                    </Button>
+                  </div>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {t('pdf.dragAndDropMarkdown')}
+                  </p>
+                </div>
+              </div>
+            )}
 
             <div className="flex space-x-2">
               <Button
                 onClick={handlePdfToMarkdown}
-                disabled={!selectedFile || isLoading}
+                disabled={!selectedFile || isLoading || !usePdfConversion}
                 className="flex-1"
               >
                 {isLoading ? (
@@ -247,7 +440,7 @@ export const PdfCsvTab: React.FC = () => {
               </Button>
               <Button
                 onClick={handleMarkdownToCsv}
-                disabled={!previewText || !selectedFile || isLoading}
+                disabled={!previewText || isLoading || (!useExistingMarkdown && !usePdfConversion)}
                 className="flex-1"
               >
                 {isLoading ? (
@@ -280,4 +473,4 @@ export const PdfCsvTab: React.FC = () => {
       </Card>
     </div>
   );
-}; 
+};
