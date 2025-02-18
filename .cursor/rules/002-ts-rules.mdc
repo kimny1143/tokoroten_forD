@@ -11,7 +11,7 @@ globs: src//.{ts,tsx}
 # ts-tokoroten-rules
 
 このファイルは、TypeScript コードに関する具体的な開発ガイドラインとスタイルルールを定義しています。  
-[001-core-cursorrules.mdc](mdc:tokoroten-MCP/tokoroten-localapp/tokoroten-MCP/.cursor/rules/001-core-cursorrules.mdc) の共通ルールに加え、以下の TypeScript 固有の項目を遵守することを推奨します。
+[001-core-cursorrules.mdc](mdc:tokoroten-localapp/tokoroten-localapp/tokoroten-MCP/tokoroten-localapp/tokoroten-MCP/.cursor/rules/001-core-cursorrules.mdc) の共通ルールに加え、以下の TypeScript 固有の項目を遵守することを推奨します。
 
 ---
 
