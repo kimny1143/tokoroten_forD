@@ -33,6 +33,7 @@ __pycache__/
 env/
 venv/
 ENV/
+python/api
 
 # 開発用文書
 /dev_docs
