@@ -24,6 +24,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.spec
+!python/api.mac.spec
+!python/api.win.spec
 *.pyc
 .Python
 .env
@@ -70,4 +72,3 @@ resources/api/api
 /release
 /python/dist
 /python/build
-/python/api
