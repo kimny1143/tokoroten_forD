@@ -1,35 +1,36 @@
-import { toast as sonnerToast } from "sonner";
+import { toast } from 'sonner';
 
-export type ToastType = "default" | "success" | "error" | "loading";
-
-interface ToastOptions {
-  type?: ToastType;
+export interface ToastProps {
   title?: string;
   description?: string;
+  type?: 'success' | 'error' | 'warning' | 'info' | 'loading';
   duration?: number;
 }
 
-export function useToast() {
-  const toast = ({ type = "default", title, description, duration = 3000 }: ToastOptions) => {
+export const useToast = () => {
+  const showToast = ({ title, description, type = 'info', duration }: ToastProps) => {
     const options = {
-      duration,
       description,
+      duration
     };
 
     switch (type) {
-      case "success":
-        sonnerToast.success(title, options);
+      case 'success':
+        toast.success(title, options);
         break;
-      case "error":
-        sonnerToast.error(title, options);
+      case 'error':
+        toast.error(title, options);
         break;
-      case "loading":
-        sonnerToast.loading(title, options);
+      case 'warning':
+        toast.warning(title, options);
+        break;
+      case 'loading':
+        toast.loading(title, options);
         break;
       default:
-        sonnerToast(title, options);
+        toast(title, options);
     }
   };
 
-  return { toast };
-} 
+  return { toast: showToast };
+}; 

@@ -9,9 +9,9 @@ export interface AppSettings {
   language: string;
   audioSettings: AudioSettings;
   pdfSettings: PDFSettings;
-  defaultInputDir?: string;
-  defaultOutputDir?: string;
-  apiKey?: string;
+  apiKey: string;
+  defaultInputDir: string;
+  defaultOutputDir: string;
 }
 
 // 音声処理関連
@@ -84,16 +84,14 @@ export interface SeparationOptions {
   other: boolean;
 }
 
-export interface AudioProcessingOptions {
+export interface AudioProcessingParams {
   inputDir: string;
   outputDir: string;
-  options: {
-    vocals: boolean;
-    drums: boolean;
-    bass: boolean;
-    other: boolean;
-    enableRenameMove: boolean;
-  };
+  options: AudioProcessingOptions;
+}
+
+export interface AudioProcessingOptions extends SeparationOptions {
+  enableRenameMove: boolean;
 }
 
 export interface AudioProcessingResult {
@@ -107,10 +105,13 @@ export interface ElectronAPI {
   // 設定関連
   getSettings: () => Promise<AppSettings>;
   saveSettings: (settings: AppSettings) => Promise<boolean>;
+  saveAPIKey: (key: string) => Promise<void>;
   
   // ファイル選択
   selectDirectory: (options: { title: string; defaultPath?: string }) => Promise<string | null>;
   selectFile: (options: FileSelectOptions) => Promise<string | null>;
+  openDirectory: () => Promise<string | null>;
+  openPDFFile: () => Promise<string | null>;
   
   // 変換関連
   convertPdfToMarkdown: (filePath: string) => Promise<ConversionResult>;
@@ -129,7 +130,7 @@ export interface ElectronAPI {
   readFile: (filePath: string) => Promise<{ success: boolean; content?: string; error?: string }>;
 
   // 音声処理関連
-  processAudio: (options: AudioProcessingOptions) => Promise<AudioProcessingResult>;
+  processAudio: (params: AudioProcessingParams) => Promise<AudioProcessingResult>;
 }
 
 // Electron イベント

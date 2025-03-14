@@ -49,7 +49,7 @@ globs: dev_docs/**/*.md
   - パイプ（|）とハイフン（-）を使用して、シンプルかつ見やすいテーブルを作成する。  
   - ヘッダー行を明確に区別する。
 - **リンクと画像**:  
-  - ハイパーリンクは `[リンクテキスト](mdc:tokoroten-localapp/tokoroten-localapp/tokoroten-localapp/tokoroten-localapp/tokoroten-localapp/tokoroten-localapp/tokoroten-localapp/URL)` の形式、画像は `![代替テキスト](mdc:tokoroten-localapp/tokoroten-localapp/tokoroten-localapp/tokoroten-localapp/tokoroten-localapp/tokoroten-localapp/tokoroten-localapp/画像URL)` の形式で記述する。
+  - ハイパーリンクは `[リンクテキスト](mdc:tokoroten-localapp/tokoroten-localapp/tokoroten-localapp/tokoroten-localapp/tokoroten-localapp/tokoroten-localapp/tokoroten-localapp/tokoroten-localapp/tokoroten-localapp/URL)` の形式、画像は `![代替テキスト](mdc:tokoroten-localapp/tokoroten-localapp/tokoroten-localapp/tokoroten-localapp/tokoroten-localapp/tokoroten-localapp/tokoroten-localapp/tokoroten-localapp/tokoroten-localapp/画像URL)` の形式で記述する。
 - **コメント**:  
   - ドキュメント内に不要な文言として記載する場合は、HTML のコメント形式 `<!-- コメント -->` を利用する。
 

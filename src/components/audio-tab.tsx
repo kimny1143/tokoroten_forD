@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { SeparationOptions, AudioProcessingOptions } from '@/types';
+import { SeparationOptions, AudioProcessingParams } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -120,7 +120,7 @@ export const AudioTab: React.FC = () => {
       };
       window.electron.on('audio-progress', progressHandler);
 
-      const options: AudioProcessingOptions = {
+      const params: AudioProcessingParams = {
         inputDir,
         outputDir,
         options: {
@@ -129,7 +129,7 @@ export const AudioTab: React.FC = () => {
         },
       };
 
-      const result = await window.electronAPI.processAudio(options);
+      const result = await window.electronAPI.processAudio(params);
       window.electron.removeListener('audio-progress', progressHandler);
 
       console.log('Audio processing result:', result);
