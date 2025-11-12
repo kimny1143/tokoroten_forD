@@ -1,12 +1,8 @@
 ---
+version: 1
 description: python-tokoroten-rules
-globs: *.py
+globs: "python/**/*.py"
 ---
-
-# Your rule content
-
-- You can @ files here
-- You can use markdown but dont have to
 
 # Python 用ルール
 

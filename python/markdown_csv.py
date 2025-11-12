@@ -76,11 +76,14 @@ class MarkdownToCSVConverter:
                 
                 # 必要な列のみを抽出し、新しい順序で並べ替え
                 columns_map = {
+                    '№': '№',
                     'No.': '№',
                     '楽曲名': '曲名',
+                    '曲名': '曲名',
                     '歌手名': '歌手名',
                     'DK№': 'DK№',
                     'OrgTime': 'OrgTime',
+                    'RecSheet備考': 'RecSheet備考',
                     '備考': 'RecSheet備考'
                 }
                 
@@ -95,13 +98,19 @@ class MarkdownToCSVConverter:
                         columns_to_keep.append(orig_col)
                         rename_dict[orig_col] = new_col
                     # 部分一致で検索（備考列の場合）
-                    elif orig_col == '備考':
+                    elif orig_col == '備考' and not any(col in df.columns for col in ['RecSheet備考', '備考']):
                         matching_cols = [col for col in df.columns if '備考' in col]
                         if matching_cols:
                             columns_to_keep.append(matching_cols[0])
                             rename_dict[matching_cols[0]] = new_col
                 
-                # 存在する列のみを抽出し、指定した順序で並べ替え
+                # 必要な列が見つからない場合、元のデータフレームを使用
+                if not columns_to_keep:
+                    logger.warning("必要な列が見つかりませんでした。元のテーブルをそのまま使用します。")
+                    dataframes.append(df)
+                    continue
+                
+                # 存在する列のみを抽出
                 df_reshaped = df[columns_to_keep].copy()
                 
                 # 列名を変更
@@ -139,11 +148,14 @@ class MarkdownToCSVConverter:
             
             # 必要な列のマッピングを定義
             columns_map = {
+                '№': '№',
                 'No.': '№',
                 '楽曲名': '曲名',
+                '曲名': '曲名',
                 '歌手名': '歌手名',
                 'DK№': 'DK№',
                 'OrgTime': 'OrgTime',
+                'RecSheet備考': 'RecSheet備考',
                 '備考': 'RecSheet備考'
             }
             
@@ -157,21 +169,26 @@ class MarkdownToCSVConverter:
                 line = line.strip()
                 if '|' in line:
                     cells = [cell.strip() for cell in line.split('|')[1:-1]]
-                    if not in_table and '---' not in line:  # ヘッダー行
+                    if not in_table and '---' not in line and len(cells) > 3:  # ヘッダー行
                         headers = cells
+                        logger.info(f"Found header row: {headers}")
                         # 必要な列のインデックスを記録
                         for orig_col, new_col in columns_map.items():
                             try:
                                 idx = headers.index(orig_col)
                                 header_indices[new_col] = idx
+                                logger.info(f"Mapped column {orig_col} to {new_col} at index {idx}")
                             except ValueError:
                                 # 備考列の特別処理
-                                if orig_col == '備考':
+                                if orig_col == '備考' and 'RecSheet備考' not in header_indices:
                                     matching_cols = [i for i, h in enumerate(headers) if '備考' in h]
                                     if matching_cols:
                                         header_indices[new_col] = matching_cols[0]
+                                        logger.info(f"Mapped column with '備考' to {new_col} at index {matching_cols[0]}")
                         in_table = True
-                    elif '---' not in line and in_table:  # データ行
+                    elif '---' in line and in_table:  # セパレータ行
+                        continue
+                    elif in_table and len(cells) > 3:  # データ行
                         # 必要な列のみを抽出して新しい順序で並べ替え
                         row_data = {}
                         for new_col, idx in header_indices.items():
@@ -181,11 +198,28 @@ class MarkdownToCSVConverter:
                                 row_data[new_col] = ''
                         
                         # 新しい順序で行を追加
-                        ordered_row = [row_data[col] for col in columns_map.values()]
+                        ordered_row = []
+                        for col in ['№', '曲名', '歌手名', 'DK№', 'OrgTime', 'RecSheet備考']:
+                            if col in row_data:
+                                ordered_row.append(row_data[col])
+                            else:
+                                ordered_row.append('')
+                        
                         table_rows.append(ordered_row)
             
             if not table_rows:
-                raise ValueError("テーブルデータが見つかりませんでした")
+                # テーブルが見つからない場合は、別の方法で抽出を試みる
+                dataframes = self._extract_tables_from_markdown(markdown_text)
+                if dataframes:
+                    df = dataframes[0]
+                    # CSVファイルを生成
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    output_path = os.path.join(self.output_dir, f'recording_sheet_{timestamp}.csv')
+                    df.to_csv(output_path, index=False, encoding='utf-8-sig')
+                    logger.info(f"Created CSV file using DataFrame: {output_path}")
+                    return [output_path]
+                else:
+                    raise ValueError("テーブルデータが見つかりませんでした")
             
             logger.info(f"Found {len(table_rows)} rows of data")
             
@@ -197,7 +231,7 @@ class MarkdownToCSVConverter:
             with open(output_path, 'w', encoding='utf-8-sig', newline='') as f:
                 writer = csv.writer(f)
                 # 新しい列名で書き出し
-                writer.writerow(columns_map.values())
+                writer.writerow(['№', '曲名', '歌手名', 'DK№', 'OrgTime', 'RecSheet備考'])
                 writer.writerows(table_rows)
             
             output_files.append(output_path)

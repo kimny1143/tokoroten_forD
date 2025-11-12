@@ -144,11 +144,11 @@ export const PdfCsvTab: React.FC = () => {
         outputDir: filePath.substring(0, filePath.lastIndexOf('/')),
       });
 
-      if (result.success && result.csvPaths && result.csvPaths.length > 0) {
+      if (result.success && result.output_files && result.output_files.length > 0) {
         // CSVファイルが生成されたら、outputDirに移動
         try {
           const moveResult = await window.electronAPI.moveFile({
-            sourcePath: result.csvPaths[0],
+            sourcePath: result.output_files[0],
             destinationDir: outputDir,
           });
 
@@ -440,7 +440,7 @@ export const PdfCsvTab: React.FC = () => {
               </Button>
               <Button
                 onClick={handleMarkdownToCsv}
-                disabled={!previewText || isLoading || (!useExistingMarkdown && !usePdfConversion)}
+                disabled={(!previewText || isLoading) || (!markdownFile && !selectedFile)}
                 className="flex-1"
               >
                 {isLoading ? (

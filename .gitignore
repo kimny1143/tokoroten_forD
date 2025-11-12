@@ -73,3 +73,27 @@ resources/api/api
 /release
 /python/dist
 /python/build
+
+# Generated data files
+/python/*.csv
+*.csv
+
+# Compiled JavaScript files (from TypeScript)
+/App.js
+/main.js
+/preload.js
+/renderer.js
+/index.js
+/components/
+/app/
+/hooks/
+/lib/
+/types/*.js
+
+# Claude Code agents configuration
+/.claude/
+
+# Local test/development files
+/RecSheet.pdf
+/recording_sheet_data.md
+/scripts/copyTs.js

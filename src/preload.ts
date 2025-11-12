@@ -7,14 +7,14 @@ interface ElectronAPI {
   openDirectory: () => Promise<string | null>;
   openPDFFile: () => Promise<string | null>;
   convertPdfToMarkdown: (pdfPath: string) => Promise<any>;
-  convertMarkdownToCsv: (markdownContent: string) => Promise<any>;
+  convertMarkdownToCsv: (params: { markdownContent: string; outputDir: string | null }) => Promise<any>;
   saveAPIKey: (key: string) => Promise<void>;
   selectDirectory: (options: any) => Promise<string | null>;
   getSettings: () => Promise<Settings>;
   saveSettings: (settings: Settings) => Promise<boolean>;
   selectFile: (options: any) => Promise<string | null>;
-  moveFile: (params: { source: string; destination: string }) => Promise<boolean>;
-  readFile: (filePath: string) => Promise<string>;
+  moveFile: (params: { sourcePath: string; destinationDir: string }) => Promise<any>;
+  readFile: (filePath: string) => Promise<any>;
 }
 
 interface Settings {
@@ -57,12 +57,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openDirectory: () => ipcRenderer.invoke('dialog:openDirectory'),
   openPDFFile: () => ipcRenderer.invoke('dialog:openPDFFile'),
   convertPdfToMarkdown: (pdfPath: string) => ipcRenderer.invoke('convert-pdf-to-markdown', { pdfPath }),
-  convertMarkdownToCsv: (markdownContent: string) => ipcRenderer.invoke('convert-markdown-to-csv', markdownContent),
+  convertMarkdownToCsv: (params: { markdownContent: string; outputDir: string | null }) => 
+    ipcRenderer.invoke('convert-markdown-to-csv', params),
   saveAPIKey: (key: string) => ipcRenderer.invoke('save-api-key', key),
   selectDirectory: (options: any) => ipcRenderer.invoke('dialog:selectDirectory', options),
   getSettings: () => ipcRenderer.invoke('settings:get'),
   saveSettings: (settings: Settings) => ipcRenderer.invoke('settings:save', settings),
   selectFile: (options: any) => ipcRenderer.invoke('dialog:selectFile', options),
-  moveFile: (params: { source: string; destination: string }) => ipcRenderer.invoke('file:move', params),
+  moveFile: (params: { sourcePath: string; destinationDir: string }) => 
+    ipcRenderer.invoke('file:move', params),
   readFile: (filePath: string) => ipcRenderer.invoke('file:read', filePath)
 }); 

@@ -13,4 +13,13 @@ dirs.forEach(dir => {
     fs.mkdirSync(dirPath, { recursive: true });
     console.log(`Created directory: ${dirPath}`);
   }
-}); 
+});
+
+// ビルドプロセスの前に必要なディレクトリが存在することを確認
+const distDir = path.join(__dirname, '..', 'dist');
+if (!fs.existsSync(distDir)) {
+  fs.mkdirSync(distDir, { recursive: true });
+  console.log(`Created directory: ${distDir}`);
+}
+
+console.log('Directories prepared successfully'); 

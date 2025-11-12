@@ -73,6 +73,7 @@ export interface ConversionResult {
   error?: string;
   message?: string;
   csvPaths?: string[];
+  output_files?: string[];
   outputDir?: string;
 }
 

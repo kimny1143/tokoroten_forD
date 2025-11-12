@@ -1,11 +1,24 @@
 ---
+version: 1
 description: core-cursorrules
-globs: *
+globs: "*"
 ---
 # Tokoroten Core Cursor Rules
 
 この文書は、Tokoroten プロジェクトにおけるタスク実行、品質管理、開発及び緊急時対応の基本ルールを定義します。  
 本プロジェクトは、Electronアプリケーションのリモート操作を実現する MCP（Management Control Platform）サーバとして実装され、Node.js/TypeScript を中心に、必要に応じて child_process 経由で Electron 及び Python のプロセス連携を行います。
+
+---
+
+## 0. 役割分担と協業フロー
+- **GPT-5 Codex（PM / 設計担当）**
+  - 現況把握・要件整理・リスク洗い出しを行い、実装計画書や手順書を作成する。
+  - ClaudeCode へのタスク指示、レビュー観点、検証項目を明文化し、`dev_docs/cursorrules/claudecode_report_instructions.md` のテンプレートに沿った報告を要求する。
+  - 成果物レビュー、課題管理、次アクションの決定を行う。
+- **ClaudeCode（実装 / 検証担当）**
+  - 指示ドキュメントの内容を実装し、テスト・ビルド・検証結果をテンプレートに沿って報告する。
+  - 不明点・ブロッカーは即時共有し、報告書にリスク/課題として記載する。
+- 両者のやり取りは Cursor 上のコメント／Markdown ドキュメントで記録し、必要に応じて `dev_docs/logs/` へログを保存する。
 
 ---
 

@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Loader2 } from 'lucide-react';
-import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from './language-provider';
 import * as Dialog from '@radix-ui/react-dialog';
@@ -16,13 +15,6 @@ export const AudioTab: React.FC = () => {
   const [processing, setProcessing] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
   const [showSuccessDialog, setShowSuccessDialog] = useState<boolean>(false);
-  const [separationOptions, setSeparationOptions] = useState<SeparationOptions>({
-    vocals: true,
-    drums: false,
-    bass: false,
-    other: false,
-  });
-  const [enableRenameMove, setEnableRenameMove] = useState<boolean>(false);
   const { toast } = useToast();
   const { t } = useLanguage();
 
@@ -124,8 +116,11 @@ export const AudioTab: React.FC = () => {
         inputDir,
         outputDir,
         options: {
-          ...separationOptions,
-          enableRenameMove,
+          vocals: true,
+          drums: true,
+          bass: true,
+          other: true,
+          enableRenameMove: true,
         },
       };
 
@@ -158,13 +153,6 @@ export const AudioTab: React.FC = () => {
       setProcessing(false);
       setProgress(0);
     }
-  };
-
-  const toggleOption = (option: keyof SeparationOptions): void => {
-    setSeparationOptions((prev) => ({
-      ...prev,
-      [option]: !prev[option],
-    }));
   };
 
   return (
@@ -242,56 +230,6 @@ export const AudioTab: React.FC = () => {
                 </Button>
               </div>
             </div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">分離対象</label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <label className="flex items-center space-x-2">
-                  <Checkbox
-                    checked={separationOptions.vocals}
-                    onCheckedChange={() => toggleOption('vocals')}
-                    disabled={processing}
-                  />
-                  <span className="text-sm">{t('audio.vocals')}</span>
-                </label>
-                <label className="flex items-center space-x-2">
-                  <Checkbox
-                    checked={separationOptions.drums}
-                    onCheckedChange={() => toggleOption('drums')}
-                    disabled={processing}
-                  />
-                  <span className="text-sm">{t('audio.drums')}</span>
-                </label>
-                <label className="flex items-center space-x-2">
-                  <Checkbox
-                    checked={separationOptions.bass}
-                    onCheckedChange={() => toggleOption('bass')}
-                    disabled={processing}
-                  />
-                  <span className="text-sm">{t('audio.bass')}</span>
-                </label>
-                <label className="flex items-center space-x-2">
-                  <Checkbox
-                    checked={separationOptions.other}
-                    onCheckedChange={() => toggleOption('other')}
-                    disabled={processing}
-                  />
-                  <span className="text-sm">{t('audio.other')}</span>
-                </label>
-              </div>
-            </div>
-
-            <label className="flex items-center space-x-2">
-              <Checkbox
-                checked={enableRenameMove}
-                onCheckedChange={(checked: boolean | 'indeterminate') => 
-                  setEnableRenameMove(checked === true)}
-                disabled={processing}
-              />
-              <span className="text-sm">{t('audio.enableRenameMove')}</span>
-            </label>
           </div>
 
           <Button
