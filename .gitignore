@@ -4,6 +4,9 @@
 # production
 /build
 /dist
+/dist_electron
+/resources
+/resources/**
 
 # misc
 .DS_Store
@@ -20,6 +23,77 @@ yarn-error.log*
 __pycache__/
 *.py[cod]
 *$py.class
+*.spec
+!python/api.mac.spec
+!python/api.win.spec
+*.pyc
+.Python
+.env
+.venv
+env/
+venv/
+ENV/
+python/api
 
-# Electron-builder
-/dist_electron
+# 開発用文書
+/dev_docs
+
+# libs and dynamic libraries
+/libs/
+/libs/**
+*.dylib
+*.so
+*.dll
+*.a
+*.lib
+
+# test files and audio files
+/test_files
+/test_files/**
+*.wav
+*.mp3
+*.aif
+*.aiff
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Large library files
+*.dylib
+resources/api/_internal/
+resources/api/api
+
+# Build output
+/release
+/python/dist
+/python/build
+
+# Generated data files
+/python/*.csv
+*.csv
+
+# Compiled JavaScript files (from TypeScript)
+/App.js
+/main.js
+/preload.js
+/renderer.js
+/index.js
+/components/
+/app/
+/hooks/
+/lib/
+/types/*.js
+
+# Claude Code agents configuration
+/.claude/
+
+# Local test/development files
+/RecSheet.pdf
+/recording_sheet_data.md
+/scripts/copyTs.js

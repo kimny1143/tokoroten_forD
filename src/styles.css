@@ -1,95 +1,220 @@
-body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: #f5f5f5;
-    color: #333;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+ 
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+ 
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+ 
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+ 
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+ 
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+ 
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+ 
+    --radius: 0.75rem;
+  }
+ 
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+ 
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+ 
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+ 
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+ 
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+ 
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+ 
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+ 
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+ 
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+  }
+}
+ 
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
 }
 
-header {
-    background-color: #000;
-    color: #fff;
-    padding: 1rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+@layer utilities {
+  .step {
+    counter-increment: step;
+  }
+
+  .step:before {
+    @apply absolute w-9 h-9 bg-muted rounded-full font-mono font-medium text-center text-base inline-flex items-center justify-center -indent-px;
+    @apply ml-[-50px] mt-[-4px];
+    content: counter(step);
+  }
 }
 
-h1 {
-    margin: 0;
+@media (max-width: 640px) {
+  .container {
+    @apply px-4;
+  }
 }
 
-.header-icons {
-    display: flex;
-    gap: 1rem;
+/* Custom scrollbar styles */
+::-webkit-scrollbar {
+  @apply w-2 h-2;
 }
 
-.icon-btn {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-    color: #fff;
+::-webkit-scrollbar-track {
+  @apply bg-muted/50 rounded-full;
 }
 
-main {
-    max-width: 800px;
-    margin: 2rem auto;
-    padding: 2rem;
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+::-webkit-scrollbar-thumb {
+  @apply bg-muted rounded-full hover:bg-muted/80 transition-colors;
 }
 
-h2 {
-    margin-top: 0;
+/* Animation */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+.animate-in {
+  animation: fade-in 0.2s ease-out forwards;
+}
+
+.animate-out {
+  animation: fade-out 0.2s ease-out forwards;
+}
+
+/* Glass Effect */
+.glass-effect {
+  @apply bg-background/10 backdrop-blur border border-border/20;
+}
+
+.dark .glass-effect {
+  @apply bg-background/5 border-border/10;
+}
+
+/* Layout & Spacing */
+.card-content {
+  @apply space-y-4;
 }
 
 .input-group {
-    display: flex;
-    margin-bottom: 1rem;
+  @apply space-y-2;
 }
 
-input[type="text"] {
-    flex-grow: 1;
-    padding: 0.5rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+.input-group label {
+  @apply text-sm font-medium text-muted-foreground;
 }
 
-button {
-    padding: 0.5rem 1rem;
-    background-color: #007bff;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    margin-left: 0.5rem;
+.button-group {
+  @apply flex space-x-2;
 }
 
 .checkbox-group {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 1rem;
+  @apply grid grid-cols-2 sm:grid-cols-4 gap-4;
 }
 
-.primary-btn {
-    display: block;
-    width: 100%;
-    padding: 1rem;
-    background-color: #6966ff;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 1.1rem;
+.checkbox-label {
+  @apply flex items-center space-x-2 text-sm text-muted-foreground;
 }
 
-.output-area {
-    margin-top: 2rem;
-    padding: 1rem;
-    background-color: #f8f9fa;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    min-height: 200px;
+/* Progress bar styling */
+.progress-container {
+  @apply space-y-2;
+}
+
+.progress-label {
+  @apply flex justify-between text-sm text-muted-foreground;
+}
+
+/* Header styling */
+.header {
+  @apply sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60;
+}
+
+.header-content {
+  @apply container flex h-14 items-center;
+}
+
+/* Tab styling */
+.tabs-list {
+  @apply inline-flex h-10 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground;
+}
+
+.tab-trigger {
+  @apply inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm;
+}
+
+/* Container */
+.container-custom {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+/* Hover Effects */
+.hover-scale {
+  @apply transition-transform duration-200 hover:scale-105;
+}
+
+/* Shadow Effects */
+.shadow-custom {
+  @apply shadow-lg shadow-black/5 dark:shadow-black/10;
+}
+
+/* Gradient Background */
+.gradient-background {
+  @apply bg-gradient-to-br from-primary-dark to-secondary-dark;
 }

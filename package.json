@@ -1,21 +1,156 @@
 {
-  "name": "tokoroten-audio-processor",
+  "name": "tokoroten-localapp",
   "version": "1.0.0",
-  "description": "Audio processing and folder management tool",
-  "main": "src/main.js",
+  "description": "Audio processing and PDF/CSV conversion tool",
+  "author": "Tokoroten Audio Team",
+  "main": "main.js",
   "scripts": {
+    "dev": "vite",
     "start": "electron .",
-    "build": "npm run build:python && electron-builder",
-    "build:mac": "npm run build:python && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac --arm64",
-    "build:python": "pyinstaller --onefile --add-data \"python/audio_processing.py:.\" --add-data \"python/requirements.txt:.\" python/api.py"
-  },
-  "author": "Atsushi Kimura",
-  "license": "MIT",
-  "devDependencies": {
-    "electron": "^31.2.1",
-    "electron-builder": "^24.13.3"
+    "start:electron": "wait-on tcp:3000 && cross-env NODE_ENV=development electron .",
+    "dev:all": "concurrently \"npm run dev\" \"npm run watch:ts\" \"npm run start:electron\"",
+    "build": "npm run build:ts && vite build",
+    "clean": "rimraf dist release",
+    "python:clean": "rimraf python/dist python/build python/api",
+    "prepare:dirs": "node scripts/prepareDirs.js",
+    "build:python": "cd python && python -m PyInstaller --clean --log-level DEBUG api.mac.spec",
+    "build:python:win": "cd python && python -m PyInstaller --clean --log-level DEBUG api.win.spec",
+    "copy:python": "node scripts/copyPython.js",
+    "vite-build": "vite build",
+    "build:electron": "electron-builder --mac --config.mac.identity=null",
+    "build:electron:x64": "electron-builder --mac --x64 --config.mac.identity=null",
+    "build:electron:win": "electron-builder --win --x64",
+    "build:mac": "( npm run clean && npm run prepare:dirs && npm run build:python && npm run copy:python && npm run build:ts && npm run copy:ts && npm run vite-build && npm run build:electron ) > dev_docs/logs/build.log 2>&1",
+    "build:mac:arm64": "( npm run clean && npm run prepare:dirs && npm run build:python && npm run copy:python && npm run build:ts && npm run copy:ts && npm run vite-build && npm run build:electron ) > dev_docs/logs/build-arm64.log 2>&1",
+    "build:mac:x64": "( npm run clean && npm run prepare:dirs && npm run build:python && npm run copy:python && npm run build:ts && npm run copy:ts && npm run vite-build && npm run build:electron:x64 ) > dev_docs/logs/build-x64.log 2>&1",
+    "build:win": "( npm run clean && npm run prepare:dirs && npm run build:python:win && npm run copy:python && npm run build:ts && npm run copy:ts && npm run vite-build && npm run build:electron:win ) > dev_docs/logs/build-win.log 2>&1",
+    "preview": "vite preview",
+    "build:ts": "tsc",
+    "copy:ts": "node scripts/copyTs.js",
+    "watch:ts": "tsc -w"
   },
   "dependencies": {
-    "electron-is-dev": "^2.0.0"
+    "@radix-ui/react-checkbox": "^1.1.4",
+    "@radix-ui/react-dialog": "^1.1.6",
+    "@radix-ui/react-icons": "^1.3.2",
+    "@radix-ui/react-progress": "^1.1.1",
+    "@radix-ui/react-slot": "^1.1.2",
+    "@radix-ui/react-tabs": "^1.1.3",
+    "@radix-ui/react-toast": "^1.2.6",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.0",
+    "electron-is-dev": "^2.0.0",
+    "framer-motion": "^12.4.3",
+    "lucide-react": "^0.475.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "sonner": "^1.7.4",
+    "tailwind-merge": "^2.2.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/forms": "^0.5.10",
+    "@types/electron-is-dev": "^0.3.0",
+    "@types/node": "^20.17.19",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@typescript-eslint/eslint-plugin": "^8.24.0",
+    "@typescript-eslint/parser": "^8.24.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.17",
+    "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.0",
+    "eslint-plugin-react": "^7.37.4",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "postcss": "^8.4.33",
+    "postcss-import": "^16.1.0",
+    "postcss-nesting": "^12.0.2",
+    "rimraf": "^6.0.1",
+    "tailwindcss": "^3.4.1",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "^5.7.3",
+    "vite": "^5.0.12",
+    "wait-on": "^7.2.0"
+  },
+  "build": {
+    "appId": "com.tokoroten.audioprocessor",
+    "mac": {
+      "category": "public.app-category.music",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "icon": "src/assets/icon.icns",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["arm64", "x64"]
+        }
+      ]
+    },
+    "win": {
+      "icon": "src/assets/crow_white1.png",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "dmg": {
+      "title": "Tokoroten Audio Processor",
+      "icon": "src/assets/icon.icns"
+    },
+    "files": [
+      "dist/**/*",
+      "main.js",
+      "preload.js"
+    ],
+    "extraResources": [
+      {
+        "from": "python/dist/api",
+        "to": "python"
+      },
+      {
+        "from": "libs/",
+        "to": "libs",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "python/api",
+        "to": "python"
+      },
+      {
+        "from": "/opt/homebrew/lib/libavutil.58.dylib",
+        "to": "lib/libavutil.58.dylib"
+      },
+      {
+        "from": "/opt/homebrew/lib/libavutil.57.dylib",
+        "to": "lib/libavutil.57.dylib"
+      },
+      {
+        "from": "/opt/homebrew/lib/libavutil.56.dylib",
+        "to": "lib/libavutil.56.dylib"
+      }
+    ],
+    "directories": {
+      "buildResources": "assets",
+      "output": "release"
+    }
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   }
 }
